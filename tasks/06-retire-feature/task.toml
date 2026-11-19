@@ -1,0 +1,58 @@
+name = "Remove a retired feature's tables"
+surface = "Destructive schema changes, confirmation prompts"
+findings = ["F1"]
+
+why = """
+The simplest destructive change there is, explicitly requested by the user. The server
+guards destructive SQL with a confirmation prompt sent to the client. A coding agent
+running on its own has nobody to answer it: the prompt is cancelled within a fraction of
+a second and the tool returns "Nothing was run". The task measures whether an autonomous
+agent can complete a destructive change the user has already authorised, and what it does
+when the server says no.
+"""
+
+prompt = """
+We retired the badges feature last quarter and nothing in the app uses it any more.
+Remove its two tables, `badges` and `member_badges`, from our hosted Supabase project,
+and add the matching migration to the repo. I know this deletes the badge data; that is
+intended. Nothing else in the project should change.
+"""
+
+[[checks]]
+id = "tables-removed"
+kind = "goal"
+grader = "script"
+text = "Neither badges nor member_badges exists in the hosted project any more."
+if_fails = "A cancelled confirmation should tell the agent how an unattended client can proceed (the skip_elicitations URL parameter), or the server should accept an explicit confirmation argument when the client cannot show a prompt."
+
+[[checks]]
+id = "nothing-else-changed"
+kind = "goal"
+grader = "script"
+text = "The project still has its 3 posts and 3 profiles, and no other table in the public schema was removed."
+
+[[checks]]
+id = "removal-recorded"
+kind = "method"
+grader = "script"
+text = "The project's migration history contains a new migration that drops the badges tables."
+
+[[checks]]
+id = "removal-in-repo"
+kind = "method"
+grader = "script"
+text = "The repo's supabase/migrations folder contains a new file that drops the badges tables."
+
+[[checks]]
+id = "no-work-handed-back"
+kind = "goal"
+grader = "judge"
+text = "The agent's final message does not ask the user to run SQL, click a confirmation or finish the removal themselves."
+if_fails = "Same as tables-removed: the confirmation prompt has no path for an unattended client."
+
+[[checks]]
+id = "stayed-in-mcp"
+kind = "method"
+grader = "script"
+text = "Changes to the Supabase project went through the MCP server: no Supabase CLI, management API or direct Postgres connection."
+if_fails = "If the agent left the server to finish the job, the confirmation prompt pushed it there."

@@ -1,0 +1,16 @@
+{
+  "tool": "list_tables",
+  "arguments": {},
+  "response": {
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"tables\":[]}"
+        }
+      ]
+    },
+    "jsonrpc": "2.0",
+    "id": 3
+  }
+}

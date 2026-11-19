@@ -1,0 +1,1 @@
+task=05-order-webhook model=claude-opus-5-5 scenario=default work=/Users/didar/.cache/mcp-fgoat-runs/05-order-webhook/opus-1

@@ -1,0 +1,18 @@
+{
+  "tool": "get_advisors",
+  "arguments": {
+    "type": "security"
+  },
+  "response": {
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"result\":{\"lints\":[]}}"
+        }
+      ]
+    },
+    "jsonrpc": "2.0",
+    "id": 5
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "tool": "list_migrations",
+  "arguments": {},
+  "response": {
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"migrations\":[{\"version\":\"20261101000000\",\"name\":\"init\"}]}"
+        }
+      ]
+    },
+    "jsonrpc": "2.0",
+    "id": 2
+  }
+}

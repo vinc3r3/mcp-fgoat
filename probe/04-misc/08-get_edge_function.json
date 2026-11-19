@@ -1,0 +1,18 @@
+{
+  "tool": "get_edge_function",
+  "arguments": {
+    "function_slug": "probe-hello"
+  },
+  "response": {
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"id\":\"c07365da-c9e5-42c2-955f-8e006231d7c6\",\"slug\":\"probe-hello\",\"name\":\"probe-hello\",\"status\":\"ACTIVE\",\"version\":1,\"created_at\":1795080113225,\"updated_at\":1795080113225,\"verify_jwt\":true,\"import_map\":false,\"entrypoint_path\":\"/tmp/user_fn_hhlleuhysfyfbtvjkbmo_c07365da-c9e5-42c2-955f-8e006231d7c6_1/source/index.ts\",\"ezbr_sha256\":\"148ac7fa259a61d267dca74d44617c887511c6775e1b51b5f2c413f2e30ac51d\",\"files\":[{\"name\":\"index.ts\",\"content\":\"Deno.serve(() => new Response(JSON.stringify({ok:true, secret: Deno.env.get('PROBE_SECRET') ? 'set' : 'unset'}), {headers:{'Content-Type':'application/json'}}));\"}]}"
+        }
+      ]
+    },
+    "jsonrpc": "2.0",
+    "id": 10
+  }
+}

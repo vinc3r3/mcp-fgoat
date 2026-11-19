@@ -1,0 +1,16 @@
+{
+  "tool": "list_migrations",
+  "arguments": {},
+  "response": {
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"migrations\":[]}"
+        }
+      ]
+    },
+    "jsonrpc": "2.0",
+    "id": 4
+  }
+}

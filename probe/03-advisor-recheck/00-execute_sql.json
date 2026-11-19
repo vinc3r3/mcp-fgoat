@@ -1,0 +1,19 @@
+{
+  "tool": "execute_sql",
+  "arguments": {
+    "query": "select table_name, grantee, string_agg(privilege_type, \",\") from information_schema.role_table_grants where table_schema = $$public$$ and grantee in ($$anon$$,$$authenticated$$) group by 1,2 order by 1,2"
+  },
+  "response": {
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\":{\"name\":\"HttpException\",\"message\":\"Failed to run sql query: ERROR:  42703: column \\\",\\\" does not exist\\nLINE 1: select table_name, grantee, string_agg(privilege_type, \\\",\\\") from information_schema.role_table_grants where table_schema = $$public$$ and grantee in ($$anon$$,$$authenticated$$) group by 1,2 order by 1,2\\n                                                               ^\\n\"}}"
+        }
+      ],
+      "isError": true
+    },
+    "jsonrpc": "2.0",
+    "id": 2
+  }
+}

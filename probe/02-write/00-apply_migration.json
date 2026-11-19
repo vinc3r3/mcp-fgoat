@@ -1,0 +1,19 @@
+{
+  "tool": "apply_migration",
+  "arguments": {
+    "name": "probe_create_notes",
+    "query": "create table public.probe_notes (id bigint generated always as identity primary key, user_id uuid, body text, created_at timestamptz default now());"
+  },
+  "response": {
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"success\":true}"
+        }
+      ]
+    },
+    "jsonrpc": "2.0",
+    "id": 2
+  }
+}

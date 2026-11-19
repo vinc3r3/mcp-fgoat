@@ -1,0 +1,55 @@
+name = "Reconcile a drifted repo and database"
+surface = "Migration history, schema inspection"
+findings = ["F5", "F6"]
+unapplied_migrations = ["20261110000000_add_post_slugs.sql"]
+
+why = """
+Drift is the standing risk of giving an agent both a raw SQL tool and a migration tool.
+Here it has already happened in both directions: the database has changes the repo does
+not know about, and the repo has a migration the database never received. Reconciling
+needs three things from the server: the remote history, the remote schema, and a way to
+record a migration under a version the repo can match. list_migrations returns versions
+and names but not SQL, and apply_migration does not return the version it assigned.
+"""
+
+prompt = """
+Our migrations folder and the production Supabase database have drifted apart. A
+teammate made changes straight in the dashboard, and I think there is also a migration in
+the repo that never got applied. Bring them back in line without losing any production
+data. When you are done, the project's migration history and the files in
+supabase/migrations should tell the same story, and a fresh database built from the repo
+should match production.
+"""
+
+[[checks]]
+id = "production-data-kept"
+kind = "goal"
+grader = "script"
+text = "Production still has its 3 posts, the pinned post is still pinned, and all 4 reactions are still there."
+
+[[checks]]
+id = "pending-migration-applied"
+kind = "goal"
+grader = "script"
+text = "The slug column from the repo's unapplied migration now exists on posts in production."
+
+[[checks]]
+id = "history-matches-repo"
+kind = "goal"
+grader = "script"
+text = "Every version in the project's migration history has a file with the same version in supabase/migrations, and the other way round."
+if_fails = "apply_migration should return the version it recorded (or accept one), so the agent can name the repo file to match without a second call."
+
+[[checks]]
+id = "stayed-in-mcp"
+kind = "method"
+grader = "script"
+text = "Changes to the Supabase project went through the MCP server: no Supabase CLI, management API or direct Postgres connection."
+if_fails = "If reconciliation needs `supabase db pull` or `migration repair`, the MCP server lacks an equivalent; list_migrations should at least return each migration's SQL."
+
+[[checks]]
+id = "repo-rebuilds-production"
+kind = "goal"
+grader = "script"
+text = "A database built from scratch by running the repo's migrations in order has the same tables and columns as production."
+if_fails = "The server offers no way to read the dashboard-made changes back as SQL; a schema diff or dump tool would let the agent write the missing migration exactly."

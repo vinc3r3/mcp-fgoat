@@ -1,0 +1,16 @@
+{
+  "tool": "list_edge_functions",
+  "arguments": {},
+  "response": {
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"functions\":[]}"
+        }
+      ]
+    },
+    "jsonrpc": "2.0",
+    "id": 4
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "tool": "search_docs",
+  "arguments": {
+    "graphql_query": "{ searchDocs(query: \"grant privileges anon new tables data api exposed\", limit: 3) { nodes { title href } } }"
+  },
+  "response": {
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"result\":{\"searchDocs\":{\"nodes\":[{\"title\":\"Securing your API\",\"href\":\"https://supabase.com/docs/guides/api/securing-your-api\"},{\"title\":\"Database Advisor: Lint 0017_foreign_table_in_api\",\"href\":\"https://supabase.com/docs/guides/observability/advisors?queryGroups=lint&lint=0017_foreign_table_in_api\"},{\"title\":\"Use Supabase with Reflex\",\"href\":\"https://supabase.com/docs/guides/getting-started/quickstarts/reflex\"}]}}}"
+        }
+      ]
+    },
+    "jsonrpc": "2.0",
+    "id": 6
+  }
+}

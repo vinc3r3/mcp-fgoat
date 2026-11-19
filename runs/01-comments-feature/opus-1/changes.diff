@@ -1,0 +1,178 @@
+diff --git a/app/actions.ts b/app/actions.ts
+new file mode 100644
+index 0000000..0f17fe2
+--- /dev/null
++++ b/app/actions.ts
+@@ -0,0 +1,43 @@
++"use server";
++
++import { refresh } from "next/cache";
++import { createClient } from "@/lib/supabase/server";
++
++export type CommentFormState = { error: string | null };
++
++export async function addComment(
++  _prev: CommentFormState,
++  formData: FormData,
++): Promise<CommentFormState> {
++  const supabase = await createClient();
++  const { data } = await supabase.auth.getUser();
++  if (!data.user) return { error: "Sign in to comment." };
++
++  const postId = Number(formData.get("post_id"));
++  const body = String(formData.get("body") ?? "").trim();
++  if (!Number.isInteger(postId)) return { error: "Unknown post." };
++  if (!body) return { error: "Comment can't be empty." };
++  if (body.length > 2000) return { error: "Comment is too long (2000 characters max)." };
++
++  // author_id defaults to auth.uid() in the database; RLS enforces it.
++  const { error } = await supabase.from("comments").insert({ post_id: postId, body });
++  if (error) return { error: error.message };
++
++  refresh();
++  return { error: null };
++}
++
++export async function deleteComment(formData: FormData) {
++  const supabase = await createClient();
++  const { data } = await supabase.auth.getUser();
++  if (!data.user) throw new Error("Unauthorized");
++
++  const id = Number(formData.get("id"));
++  if (!Number.isInteger(id)) throw new Error("Unknown comment.");
++
++  // RLS only lets authors delete their own rows; the author_id filter makes that explicit.
++  const { error } = await supabase.from("comments").delete().eq("id", id).eq("author_id", data.user.id);
++  if (error) throw new Error(error.message);
++
++  refresh();
++}
+diff --git a/app/comment-form.tsx b/app/comment-form.tsx
+new file mode 100644
+index 0000000..cae4983
+--- /dev/null
++++ b/app/comment-form.tsx
+@@ -0,0 +1,21 @@
++"use client";
++
++import { useActionState } from "react";
++import { addComment, type CommentFormState } from "@/app/actions";
++
++export function CommentForm({ postId }: { postId: number }) {
++  const [state, formAction, pending] = useActionState<CommentFormState, FormData>(addComment, {
++    error: null,
++  });
++
++  return (
++    <form action={formAction} style={{ display: "grid", gap: 8, marginTop: 8 }}>
++      <input type="hidden" name="post_id" value={postId} />
++      <textarea name="body" placeholder="Add a comment" rows={2} maxLength={2000} required />
++      <button type="submit" disabled={pending} style={{ justifySelf: "start" }}>
++        {pending ? "Posting…" : "Comment"}
++      </button>
++      {state.error && <p role="alert">{state.error}</p>}
++    </form>
++  );
++}
+diff --git a/app/page.tsx b/app/page.tsx
+index 53618de..06e7bf1 100644
+--- a/app/page.tsx
++++ b/app/page.tsx
+@@ -1,5 +1,15 @@
+ import { Suspense } from "react";
+ import { createClient } from "@/lib/supabase/server";
++import { deleteComment } from "@/app/actions";
++import { CommentForm } from "@/app/comment-form";
++
++type Comment = {
++  id: number;
++  body: string;
++  created_at: string;
++  author_id: string;
++  profiles: { display_name: string } | null;
++};
+ 
+ async function Account() {
+   const supabase = await createClient();
+@@ -9,10 +19,17 @@ async function Account() {
+ 
+ async function Posts() {
+   const supabase = await createClient();
+-  const { data: posts, error } = await supabase
+-    .from("posts")
+-    .select("id, title, body, created_at, profiles(display_name)")
+-    .order("created_at", { ascending: false });
++  const [{ data: auth }, { data: posts, error }] = await Promise.all([
++    supabase.auth.getUser(),
++    supabase
++      .from("posts")
++      .select(
++        "id, title, body, created_at, profiles(display_name), comments(id, body, created_at, author_id, profiles(display_name))",
++      )
++      .order("created_at", { ascending: false })
++      .order("created_at", { referencedTable: "comments", ascending: true }),
++  ]);
++  const userId = auth.user?.id;
+ 
+   if (error) {
+     return <p>Could not load posts: {error.message}</p>;
+@@ -28,6 +45,30 @@ async function Posts() {
+             {new Date(post.created_at).toLocaleDateString("en-GB")}
+           </small>
+           <p>{post.body}</p>
++          <section aria-label="Comments" style={{ marginLeft: 16 }}>
++            <h3 style={{ fontSize: "1rem" }}>Comments</h3>
++            {(post.comments as unknown as Comment[]).length === 0 && <p><small>No comments yet.</small></p>}
++            {(post.comments as unknown as Comment[]).map((comment) => (
++              <div key={comment.id} style={{ margin: "8px 0" }}>
++                <small>
++                  <strong>{comment.profiles?.display_name ?? "Unknown"}</strong> ·{" "}
++                  {new Date(comment.created_at).toLocaleDateString("en-GB")}
++                </small>
++                <p style={{ margin: "4px 0", whiteSpace: "pre-wrap" }}>{comment.body}</p>
++                {comment.author_id === userId && (
++                  <form action={deleteComment}>
++                    <input type="hidden" name="id" value={comment.id} />
++                    <button type="submit">Delete</button>
++                  </form>
++                )}
++              </div>
++            ))}
++            {userId ? (
++              <CommentForm postId={post.id} />
++            ) : (
++              <p><small><a href="/login">Sign in</a> to comment.</small></p>
++            )}
++          </section>
+         </article>
+       ))}
+     </>
+diff --git a/supabase/migrations/20261119104514_comments.sql b/supabase/migrations/20261119104514_comments.sql
+new file mode 100644
+index 0000000..9ab1fea
+--- /dev/null
++++ b/supabase/migrations/20261119104514_comments.sql
+@@ -0,0 +1,23 @@
++-- Comments: members comment on posts; anyone can read.
++create table public.comments (
++  id bigint generated always as identity primary key,
++  post_id bigint not null references public.posts (id) on delete cascade,
++  author_id uuid not null default auth.uid() references public.profiles (id) on delete cascade,
++  body text not null check (char_length(btrim(body)) between 1 and 2000),
++  created_at timestamptz not null default now()
++);
++create index comments_post_id_created_at_idx on public.comments (post_id, created_at);
++create index comments_author_id_idx on public.comments (author_id);
++
++alter table public.comments enable row level security;
++
++-- Comments are never edited, so no update grant or policy.
++grant select on public.comments to anon, authenticated;
++grant insert (post_id, body), delete on public.comments to authenticated;
++
++create policy "Comments are public" on public.comments
++  for select using (true);
++create policy "Members add their own comments" on public.comments
++  for insert to authenticated with check ((select auth.uid()) = author_id);
++create policy "Members delete their own comments" on public.comments
++  for delete to authenticated using ((select auth.uid()) = author_id);

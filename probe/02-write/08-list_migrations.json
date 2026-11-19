@@ -1,0 +1,16 @@
+{
+  "tool": "list_migrations",
+  "arguments": {},
+  "response": {
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"migrations\":[{\"version\":\"20261119092047\",\"name\":\"probe_create_notes\"}]}"
+        }
+      ]
+    },
+    "jsonrpc": "2.0",
+    "id": 10
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "tool": "execute_sql",
+  "arguments": {
+    "query": "select nope from public.probe_notes"
+  },
+  "response": {
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\":{\"name\":\"HttpException\",\"message\":\"Failed to run sql query: ERROR:  42703: column \\\"nope\\\" does not exist\\nLINE 1: select nope from public.probe_notes\\n               ^\\n\"}}"
+        }
+      ],
+      "isError": true
+    },
+    "jsonrpc": "2.0",
+    "id": 8
+  }
+}

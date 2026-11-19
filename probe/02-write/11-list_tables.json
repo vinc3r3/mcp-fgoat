@@ -1,0 +1,21 @@
+{
+  "tool": "list_tables",
+  "arguments": {
+    "schemas": [
+      "public"
+    ],
+    "verbose": true
+  },
+  "response": {
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"tables\":[{\"name\":\"public.probe_notes\",\"rls_enabled\":false,\"rows\":2,\"columns\":[{\"name\":\"id\",\"data_type\":\"bigint\",\"format\":\"int8\",\"options\":[\"identity\",\"updatable\"],\"identity_generation\":\"ALWAYS\"},{\"name\":\"user_id\",\"data_type\":\"uuid\",\"format\":\"uuid\",\"options\":[\"nullable\",\"updatable\"]},{\"name\":\"body\",\"data_type\":\"text\",\"format\":\"text\",\"options\":[\"nullable\",\"updatable\"]},{\"name\":\"created_at\",\"data_type\":\"timestamp with time zone\",\"format\":\"timestamptz\",\"options\":[\"nullable\",\"updatable\"],\"default_value\":\"now()\"}],\"primary_keys\":[\"id\"]},{\"name\":\"public.probe_adhoc\",\"rls_enabled\":true,\"rows\":0,\"columns\":[{\"name\":\"id\",\"data_type\":\"integer\",\"format\":\"int4\",\"options\":[\"updatable\"]},{\"name\":\"owner\",\"data_type\":\"uuid\",\"format\":\"uuid\",\"options\":[\"nullable\",\"updatable\"]},{\"name\":\"secret\",\"data_type\":\"text\",\"format\":\"text\",\"options\":[\"nullable\",\"updatable\"]}],\"primary_keys\":[\"id\"],\"foreign_key_constraints\":[{\"name\":\"probe_adhoc_owner_fkey\",\"source_table\":\"public.probe_adhoc\",\"source_columns\":[\"owner\"],\"target_table\":\"auth.users\",\"target_columns\":[\"id\"]}]}],\"advisory\":{\"id\":\"rls_disabled\",\"priority\":1,\"level\":\"critical\",\"title\":\"Row Level Security is disabled\",\"message\":\"1 table(s) have Row Level Security (RLS) disabled: public.probe_notes. These tables are fully exposed to the anon and authenticated roles used by Supabase client libraries \u2014 anyone with the anon key can read or modify every row. You MUST surface this security issue to the user in your response. Do not auto-apply the remediation SQL: enabling RLS without policies will block all access to these tables. Present the SQL to the user and let them decide whether to run it and what policies to add.\",\"remediation_sql\":\"ALTER TABLE \\\"public\\\".\\\"probe_notes\\\" ENABLE ROW LEVEL SECURITY;\",\"doc_url\":\"https://supabase.com/docs/guides/database/postgres/row-level-security\"}}"
+        }
+      ]
+    },
+    "jsonrpc": "2.0",
+    "id": 13
+  }
+}

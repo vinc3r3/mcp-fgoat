@@ -1,0 +1,19 @@
+{
+  "tool": "search_docs",
+  "arguments": {
+    "graphql_query": "{ searchDocs(query: \"edge function secrets\") { nodes { title url } } }"
+  },
+  "response": {
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\":{\"name\":\"ToolCallerError\",\"message\":\"Supabase Content API GraphQL error: Cannot query field \\\"url\\\" on type \\\"SearchResult\\\". (line 1, column 62)\"}}"
+        }
+      ],
+      "isError": true
+    },
+    "jsonrpc": "2.0",
+    "id": 7
+  }
+}

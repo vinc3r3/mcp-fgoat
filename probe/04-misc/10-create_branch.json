@@ -1,0 +1,19 @@
+{
+  "tool": "create_branch",
+  "arguments": {
+    "name": "probe-branch"
+  },
+  "response": {
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\":{\"name\":\"ToolCallerError\",\"message\":\"This client needs a cost confirmation ID: call `get_cost`, tell the user the cost, call `confirm_cost` once they agree, then retry with its `confirmation_id` as `confirm_cost_id`.\"}}"
+        }
+      ],
+      "isError": true
+    },
+    "jsonrpc": "2.0",
+    "id": 12
+  }
+}

@@ -1,0 +1,1 @@
+task=04-prelaunch-security model=claude-opus-5-5 work=/Users/didar/.cache/mcp-fgoat-runs/04-prelaunch-security/opus-1

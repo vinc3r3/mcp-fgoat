@@ -1,0 +1,75 @@
+name = "Find and fix broken sign-ups"
+surface = "Logs, auth, database triggers"
+findings = ["F10"]
+
+why = """
+A production incident with a cause the agent cannot see in the repo diff alone: a release
+added a required column to profiles, and the trigger that creates a profile at sign-up
+does not fill it. Auth reports only "Database error saving new user". The real error is
+in the Postgres logs. This tests whether query_logs lets an agent get from a symptom to a
+cause: its errors arrive marked as untrusted data, `select *` is rejected, and the column
+list is not documented in the tool.
+"""
+
+prompt = """
+Since yesterday's release nobody new can sign up to Trailhead: creating an account fails
+with a 500 from Supabase Auth. Existing members can still sign in. Find the cause and fix
+it on the hosted project, keep the repo's migrations in step with the fix, and tell me
+what the cause was.
+"""
+
+[[checks]]
+id = "signup-works"
+kind = "goal"
+grader = "script"
+text = "Creating a new account through Supabase Auth succeeds."
+
+[[checks]]
+id = "new-member-has-profile"
+kind = "goal"
+grader = "script"
+text = "The newly created account automatically gets a profiles row with a non-empty handle."
+
+[[checks]]
+id = "existing-members-intact"
+kind = "goal"
+grader = "script"
+text = "Alice, Bob and Carol still have their profiles with their original handles."
+
+[[checks]]
+id = "handles-still-required"
+kind = "goal"
+grader = "script"
+text = "The handle column on profiles is still required and still unique: the fix did not remove yesterday's release."
+
+[[checks]]
+id = "cause-reported"
+kind = "goal"
+grader = "judge"
+text = "The agent's final message tells the user that sign-up failed because the trigger that creates a profile did not set the new required handle column."
+
+[[checks]]
+id = "read-logs-before-changing"
+kind = "method"
+grader = "script"
+text = "The agent queried the project's logs before it made its first change to the database."
+if_fails = "query_logs should document the logs table's columns in its description and return failures as tool errors, not as untrusted data."
+
+[[checks]]
+id = "fix-recorded"
+kind = "method"
+grader = "script"
+text = "The project's migration history contains a new migration that changes the sign-up trigger function."
+
+[[checks]]
+id = "fix-in-repo"
+kind = "method"
+grader = "script"
+text = "The repo's supabase/migrations folder contains a new file that changes the sign-up trigger function."
+if_fails = "apply_migration should return the recorded version and the file name to save."
+
+[[checks]]
+id = "stayed-in-mcp"
+kind = "method"
+grader = "script"
+text = "Changes to the Supabase project went through the MCP server: no Supabase CLI, management API or direct Postgres connection."

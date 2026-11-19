@@ -1,0 +1,18 @@
+{
+  "tool": "get_advisors",
+  "arguments": {
+    "type": "security"
+  },
+  "response": {
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"result\":{\"lints\":[{\"name\":\"function_search_path_mutable\",\"title\":\"Function Search Path Mutable\",\"level\":\"WARN\",\"facing\":\"EXTERNAL\",\"categories\":[\"SECURITY\"],\"description\":\"Detects functions where the search_path parameter is not set.\",\"remediation\":\"https://supabase.com/docs/guides/database/database-linter?lint=0011_function_search_path_mutable\",\"count\":1,\"findings\":[{\"detail\":\"Function \\\\`public.probe_fn\\\\` has a role mutable search_path\",\"metadata\":{\"name\":\"probe_fn\",\"type\":\"function\",\"schema\":\"public\"},\"observed_at\":\"2026-11-19T09:21:05.863Z\"}]},{\"name\":\"anon_security_definer_function_executable\",\"title\":\"Public Can Execute SECURITY DEFINER Function\",\"level\":\"WARN\",\"facing\":\"EXTERNAL\",\"categories\":[\"SECURITY\"],\"description\":\"Detects `SECURITY DEFINER` functions that are callable without signing in. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if it is not meant to be public.\",\"remediation\":\"https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable\",\"count\":1,\"findings\":[{\"detail\":\"Function `public.probe_fn()` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/probe_fn`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.\",\"metadata\":{\"name\":\"probe_fn\",\"schema\":\"public\",\"language\":\"sql\",\"arguments\":\"\",\"security_definer\":true},\"observed_at\":\"2026-11-19T09:21:05.863Z\"}]},{\"name\":\"authenticated_security_definer_function_executable\",\"title\":\"Signed-In Users Can Execute SECURITY DEFINER Function\",\"level\":\"WARN\",\"facing\":\"EXTERNAL\",\"categories\":[\"SECURITY\"],\"description\":\"Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.\",\"remediation\":\"https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable\",\"count\":1,\"findings\":[{\"detail\":\"Function `public.probe_fn()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/probe_fn`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.\",\"metadata\":{\"name\":\"probe_fn\",\"schema\":\"public\",\"language\":\"sql\",\"arguments\":\"\",\"security_definer\":true},\"observed_at\":\"2026-11-19T09:21:05.863Z\"}]}]}}"
+        }
+      ]
+    },
+    "jsonrpc": "2.0",
+    "id": 11
+  }
+}

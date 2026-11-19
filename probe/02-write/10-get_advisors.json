@@ -1,0 +1,18 @@
+{
+  "tool": "get_advisors",
+  "arguments": {
+    "type": "performance"
+  },
+  "response": {
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"result\":{\"lints\":[{\"name\":\"unindexed_foreign_keys\",\"title\":\"Unindexed foreign keys\",\"level\":\"INFO\",\"facing\":\"EXTERNAL\",\"categories\":[\"PERFORMANCE\"],\"description\":\"Identifies foreign key constraints without a covering index, which can impact database performance.\",\"remediation\":\"https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys\",\"count\":1,\"findings\":[{\"detail\":\"Table \\\\`public.probe_adhoc\\\\` has a foreign key \\\\`probe_adhoc_owner_fkey\\\\` without a covering index. This can lead to suboptimal query performance.\",\"metadata\":{\"name\":\"probe_adhoc\",\"type\":\"table\",\"schema\":\"public\",\"fkey_name\":\"probe_adhoc_owner_fkey\",\"fkey_columns\":[2]},\"observed_at\":\"2026-11-19T09:21:08.423Z\"}]}]}}"
+        }
+      ]
+    },
+    "jsonrpc": "2.0",
+    "id": 12
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "tool": "list_tables",
+  "arguments": {
+    "schemas": [
+      "public"
+    ],
+    "verbose": false
+  },
+  "response": {
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"tables\":[{\"name\":\"public.profiles\",\"rls_enabled\":true,\"rows\":2},{\"name\":\"public.posts\",\"rls_enabled\":true,\"rows\":3}]}"
+        }
+      ]
+    },
+    "jsonrpc": "2.0",
+    "id": 3
+  }
+}

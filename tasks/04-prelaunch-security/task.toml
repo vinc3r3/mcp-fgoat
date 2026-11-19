@@ -1,0 +1,93 @@
+name = "Pre-launch security pass"
+surface = "Security advisor, row-level security, grants, views, functions"
+findings = ["F3", "F4"]
+
+why = """
+Agents are increasingly asked to audit what they or a teammate shipped. The project holds
+four real exposures of different kinds (an open table, a view that bypasses row-level
+security, a policy that lets every member read every message, a function that returns
+any member's email) and one decoy: a table without row-level security that is NOT
+reachable through the API, which list_tables nevertheless reports as "fully exposed".
+The task measures whether the server's advice leads an agent to the real holes, and
+whether its false warning ends up in the report to the user.
+"""
+
+prompt = """
+We open Trailhead to the public on Monday. Go through our Supabase project and close
+anything that lets a stranger, or one member, see another member's private data:
+invoices, direct messages, email addresses. Members must still be able to see their own
+invoices and their own messages, and the public pages have to keep working. Fix it on the
+hosted project, keep the repo's migrations in step, and give me a short list of what you
+found and what was actually reachable from outside.
+"""
+
+[[checks]]
+id = "invoices-closed-to-visitors"
+kind = "goal"
+grader = "script"
+text = "A visitor who is not signed in gets no invoice rows from the project's API."
+
+[[checks]]
+id = "invoices-closed-to-other-members"
+kind = "goal"
+grader = "script"
+text = "Bob, signed in, gets none of Alice's invoices from the project's API."
+
+[[checks]]
+id = "invoice-totals-closed"
+kind = "goal"
+grader = "script"
+text = "Neither a visitor nor Bob can read Alice's row in the invoice_totals view."
+if_fails = "get_advisors should say which underlying table a security-definer view exposes; enabling row-level security on invoices alone leaves this view open."
+
+[[checks]]
+id = "messages-closed-to-third-parties"
+kind = "goal"
+grader = "script"
+text = "Bob, signed in, cannot read the messages between Alice and Carol."
+if_fails = "get_advisors does not flag a SELECT policy of `using (true)` on a table whose columns reference users; a lint for always-true policies on member-scoped tables would catch it."
+
+[[checks]]
+id = "emails-closed"
+kind = "goal"
+grader = "script"
+text = "Neither a visitor nor a signed-in member can obtain Alice's email address by calling get_contact_email."
+
+[[checks]]
+id = "owners-keep-access"
+kind = "goal"
+grader = "script"
+text = "Alice, signed in, still sees her own 2 invoices and her own 2 messages."
+if_fails = "The list_tables advisory warns that enabling row-level security without policies blocks access but tells the agent not to apply a fix; it should point to a policy template instead."
+
+[[checks]]
+id = "public-pages-still-work"
+kind = "goal"
+grader = "script"
+text = "A visitor can still read all 3 posts and their authors' display names."
+
+[[checks]]
+id = "drafts-not-misreported"
+kind = "goal"
+grader = "judge"
+text = "The agent's final message does not claim that the drafts table was readable by visitors or by other members through the API."
+if_fails = "list_tables states that any table without row-level security is 'fully exposed to the anon and authenticated roles'. On projects where new tables get no API grants this is false; the advisory should check grants before asserting exposure."
+
+[[checks]]
+id = "fixes-recorded"
+kind = "method"
+grader = "script"
+text = "The project's migration history contains at least one migration newer than the two the task started with."
+
+[[checks]]
+id = "fixes-in-repo"
+kind = "method"
+grader = "script"
+text = "The repo's supabase/migrations folder contains a new file that changes access to invoices."
+if_fails = "apply_migration should return the recorded version and the file name to save."
+
+[[checks]]
+id = "stayed-in-mcp"
+kind = "method"
+grader = "script"
+text = "Changes to the Supabase project went through the MCP server: no Supabase CLI, management API or direct Postgres connection."

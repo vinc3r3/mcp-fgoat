@@ -1,0 +1,32 @@
+diff --git a/supabase/migrations/20261119000000_lock_down_private_data.sql b/supabase/migrations/20261119000000_lock_down_private_data.sql
+new file mode 100644
+index 0000000..963782e
+--- /dev/null
++++ b/supabase/migrations/20261119000000_lock_down_private_data.sql
+@@ -0,0 +1,26 @@
++-- Pre-launch lockdown: members may only see their own invoices, messages and email.
++
++-- Invoices: RLS was never enabled and anon could select every row.
++revoke all on public.invoices from anon;
++alter table public.invoices enable row level security;
++create policy "Members read their own invoices" on public.invoices
++  for select to authenticated using ((select auth.uid()) = customer_id);
++
++-- invoice_totals ran with the view owner's rights, bypassing invoice RLS.
++alter view public.invoice_totals set (security_invoker = true);
++revoke all on public.invoice_totals from anon;
++
++-- Messages: any signed-in member could read every conversation.
++drop policy "Members can read messages" on public.messages;
++create policy "Members read their own messages" on public.messages
++  for select to authenticated
++  using ((select auth.uid()) in (sender_id, recipient_id));
++
++-- get_contact_email: security definer reading auth.users, executable by PUBLIC
++-- (so anon could look up any member's email via /rpc). Server-side only now.
++revoke execute on function public.get_contact_email(uuid) from public, anon, authenticated;
++grant execute on function public.get_contact_email(uuid) to service_role;
++
++-- Drafts: background job only. Not granted to API roles, but enable RLS as a backstop.
++revoke all on public.drafts from anon, authenticated;
++alter table public.drafts enable row level security;

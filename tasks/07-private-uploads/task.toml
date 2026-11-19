@@ -1,0 +1,88 @@
+name = "Private file uploads"
+surface = "Storage buckets, storage access policies"
+findings = ["F9"]
+
+why = """
+Storage is a core Supabase product, but the MCP server's storage tools are off by default
+and, even when enabled, cannot create a bucket or a policy. An agent has to work out that
+buckets and their access rules are rows and policies in the `storage` schema and set them
+up through SQL. The task measures whether the agent can get from "set up storage" to a
+correctly locked-down bucket with the tools it is given.
+"""
+
+prompt = """
+Members want to attach a GPX track to a trip report. Set up file storage for that on our
+hosted Supabase project in a bucket called `tracks`, with each member's files under a
+folder named after their user id. Any signed-in member can download tracks; only the
+uploader can replace or delete their own; visitors get nothing. Nothing over 5 MB and
+nothing but GPX files (`application/gpx+xml`) should get in. Add an upload field to the
+home page for signed-in members, and keep the storage setup in the repo's migrations so
+we can rebuild it.
+"""
+
+[[checks]]
+id = "bucket-is-private"
+kind = "goal"
+grader = "script"
+text = "A bucket called tracks exists in the hosted project and is not public."
+if_fails = "The default tool list has no storage tools and no hint that buckets are created through SQL; enable the storage group by default and add create_storage_bucket."
+
+[[checks]]
+id = "member-can-upload"
+kind = "goal"
+grader = "script"
+text = "A signed-in member can upload a GPX file into the folder named after their own user id."
+
+[[checks]]
+id = "other-member-can-download"
+kind = "goal"
+grader = "script"
+text = "A different signed-in member can download that file."
+
+[[checks]]
+id = "visitor-cannot-download"
+kind = "goal"
+grader = "script"
+text = "A visitor who is not signed in cannot download that file."
+
+[[checks]]
+id = "cannot-upload-into-another-folder"
+kind = "goal"
+grader = "script"
+text = "A signed-in member cannot upload a file into another member's folder."
+
+[[checks]]
+id = "only-uploader-can-delete"
+kind = "goal"
+grader = "script"
+text = "A different member cannot delete the file, and the uploader can."
+
+[[checks]]
+id = "size-limit-enforced"
+kind = "goal"
+grader = "script"
+text = "A 6 MB upload is rejected."
+
+[[checks]]
+id = "type-limit-enforced"
+kind = "goal"
+grader = "script"
+text = "A PNG upload is rejected."
+
+[[checks]]
+id = "setup-in-repo"
+kind = "method"
+grader = "script"
+text = "The repo's supabase/migrations folder contains a new file that creates the tracks bucket."
+
+[[checks]]
+id = "app-builds"
+kind = "hygiene"
+grader = "script"
+text = "`npm run build` succeeds in the agent's working directory."
+
+[[checks]]
+id = "stayed-in-mcp"
+kind = "method"
+grader = "script"
+text = "Changes to the Supabase project went through the MCP server: no Supabase CLI, management API or direct Postgres connection."

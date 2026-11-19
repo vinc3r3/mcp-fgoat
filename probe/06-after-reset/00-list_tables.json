@@ -1,0 +1,21 @@
+{
+  "tool": "list_tables",
+  "arguments": {
+    "schemas": [
+      "public"
+    ],
+    "verbose": false
+  },
+  "response": {
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"tables\":[]}"
+        }
+      ]
+    },
+    "jsonrpc": "2.0",
+    "id": 2
+  }
+}

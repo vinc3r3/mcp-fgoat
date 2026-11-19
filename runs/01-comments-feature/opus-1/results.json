@@ -1,0 +1,87 @@
+[
+  {
+    "id": "visitor-can-read-comments",
+    "kind": "goal",
+    "grader": "script",
+    "text": "A visitor who is not signed in can read comments through the project's API.",
+    "if_fails": "apply_migration should warn when a new table has policies but no grants for the API roles; today the result is {\"success\":true} and the app gets 'permission denied'.",
+    "status": "pass",
+    "evidence": "GET /comments as visitor -> 200, 1 row(s): [{'id': 3, 'post_id': 1, 'author_id': '28c809d9-dedc-4bba-a702-ff079710d07f', 'body': 'check-7f3a-read', 'created_at': '"
+  },
+  {
+    "id": "member-can-comment",
+    "kind": "goal",
+    "grader": "script",
+    "text": "A signed-in member can add a comment to a post.",
+    "if_fails": "Same grant gap as above, for INSERT.",
+    "status": "pass",
+    "evidence": "POST /comments as Alice -> 201; rows stored: 1. "
+  },
+  {
+    "id": "visitor-cannot-comment",
+    "kind": "goal",
+    "grader": "script",
+    "text": "A visitor who is not signed in cannot add a comment.",
+    "status": "pass",
+    "evidence": "POST /comments as visitor -> 401; rows stored: 0"
+  },
+  {
+    "id": "no-impersonation",
+    "kind": "goal",
+    "grader": "script",
+    "text": "A member cannot add a comment that is recorded as written by another member.",
+    "status": "pass",
+    "evidence": "Alice posting as Bob -> 403; rows recorded under Bob: 0"
+  },
+  {
+    "id": "delete-own-only",
+    "kind": "goal",
+    "grader": "script",
+    "text": "A member cannot delete another member's comment, and can delete their own.",
+    "status": "pass",
+    "evidence": "after Bob's delete the row survived; after Alice's delete it is gone"
+  },
+  {
+    "id": "comments-on-home-page",
+    "kind": "goal",
+    "grader": "script",
+    "text": "The built app serves the home page with status 200 and an existing comment's text appears on it.",
+    "status": "pass",
+    "evidence": "GET / -> 200; comment text found in the HTML"
+  },
+  {
+    "id": "migration-recorded",
+    "kind": "method",
+    "grader": "script",
+    "text": "The project's migration history contains a migration that creates the comments table.",
+    "if_fails": "execute_sql accepts DDL silently; it should refuse or warn and point to apply_migration.",
+    "status": "pass",
+    "evidence": "1 recorded migration(s) mention 'comments' (2 total, 1 seeded)"
+  },
+  {
+    "id": "migration-in-repo",
+    "kind": "method",
+    "grader": "script",
+    "text": "The repo's supabase/migrations folder contains a new file that creates the comments table.",
+    "if_fails": "apply_migration should return the recorded version and the file name to save, e.g. supabase/migrations/<version>_<name>.sql.",
+    "status": "pass",
+    "evidence": "new migration files mentioning 'comments': ['20261119104514_comments.sql']"
+  },
+  {
+    "id": "app-builds",
+    "kind": "hygiene",
+    "grader": "script",
+    "text": "`npm run build` succeeds in the agent's working directory.",
+    "status": "pass",
+    "evidence": "npm run build succeeded"
+  },
+  {
+    "id": "stayed-in-mcp",
+    "kind": "method",
+    "grader": "script",
+    "text": "Changes to the Supabase project went through the MCP server: no Supabase CLI, management API or direct Postgres connection.",
+    "if_fails": "The server's own instructions tell agents with a shell to use the Supabase CLI; the MCP tools should be sufficient for a remote project, or say when they are not.",
+    "status": "pass",
+    "evidence": "7 MCP calls, no CLI, management API or direct database access"
+  }
+]

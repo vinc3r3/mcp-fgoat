@@ -1,0 +1,17 @@
+{
+  "tool": "list_storage_buckets",
+  "arguments": {},
+  "response": {
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\":{\"name\":\"Error\",\"message\":\"tool not found\"}}"
+        }
+      ],
+      "isError": true
+    },
+    "jsonrpc": "2.0",
+    "id": 14
+  }
+}

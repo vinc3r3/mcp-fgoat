@@ -1,0 +1,17 @@
+{
+  "tool": "list_branches",
+  "arguments": {},
+  "response": {
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\":{\"name\":\"ProtocolError\",\"message\":\"MCP error -32600: You do not have permission to perform this action\"}}"
+        }
+      ],
+      "isError": true
+    },
+    "jsonrpc": "2.0",
+    "id": 9
+  }
+}

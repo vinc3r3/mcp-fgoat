@@ -1,0 +1,18 @@
+{
+  "tool": "get_advisors",
+  "arguments": {
+    "type": "performance"
+  },
+  "response": {
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"result\":{\"lints\":[{\"name\":\"unused_index\",\"title\":\"Unused Index\",\"level\":\"INFO\",\"facing\":\"EXTERNAL\",\"categories\":[\"PERFORMANCE\"],\"description\":\"Detects if an index has never been used and may be a candidate for removal.\",\"remediation\":\"https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index\",\"count\":1,\"findings\":[{\"detail\":\"Index \\\\`posts_author_id_idx\\\\` on table \\\\`public.posts\\\\` has not been used\",\"metadata\":{\"name\":\"posts\",\"type\":\"table\",\"schema\":\"public\"},\"observed_at\":\"2026-11-19T09:36:37.099Z\"}]}]}}"
+        }
+      ]
+    },
+    "jsonrpc": "2.0",
+    "id": 5
+  }
+}

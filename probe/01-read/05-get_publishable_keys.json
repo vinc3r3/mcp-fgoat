@@ -1,0 +1,16 @@
+{
+  "tool": "get_publishable_keys",
+  "arguments": {},
+  "response": {
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"keys\":[{\"api_key\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhobGxldWh5c2Z5ZmJ0dmprYm1vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUwNzY0ODAsImV4cCI6MjExMDY1MjQ4MH0.q56xfAygAUy_rlcBMKZoFrvuk8CHR537EfuN73cKjLs\",\"name\":\"anon\",\"type\":\"legacy\",\"disabled\":false,\"description\":\"Legacy anon API key\",\"id\":\"anon\"},{\"api_key\":\"sb_publishable_m8D6I3ELRJTo2JIPstdTIw_ym_fFA9j\",\"name\":\"default\",\"type\":\"publishable\",\"disabled\":false,\"id\":\"129b3200-7c35-4759-8139-fe9957905cb5\"}]}"
+        }
+      ]
+    },
+    "jsonrpc": "2.0",
+    "id": 7
+  }
+}

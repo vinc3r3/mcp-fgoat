@@ -1,0 +1,20 @@
+{
+  "tool": "apply_migration",
+  "arguments": {
+    "name": "probe_bad",
+    "query": "alter table public.missing_table add column x int;"
+  },
+  "response": {
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"error\":{\"name\":\"HttpException\",\"message\":\"Failed to apply database migration: ERROR:  42P01: relation \\\"public.missing_table\\\" does not exist\\n\"}}"
+        }
+      ],
+      "isError": true
+    },
+    "jsonrpc": "2.0",
+    "id": 9
+  }
+}
