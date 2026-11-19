@@ -1,0 +1,39 @@
+diff --git a/supabase/migrations/20261119000000_lock_down_private_data.sql b/supabase/migrations/20261119000000_lock_down_private_data.sql
+new file mode 100644
+index 0000000..595f59b
+--- /dev/null
++++ b/supabase/migrations/20261119000000_lock_down_private_data.sql
+@@ -0,0 +1,33 @@
++-- Pre-launch lockdown: members may only see their own invoices and messages,
++-- and nobody outside the backend may look up email addresses.
++
++-- Invoices: RLS was never enabled and anon had SELECT, so every invoice was public.
++alter table public.invoices enable row level security;
++revoke all on public.invoices from anon;
++create policy "Members read their own invoices" on public.invoices
++  for select to authenticated using ((select auth.uid()) = customer_id);
++
++-- invoice_totals ran with the owner's rights, bypassing RLS on invoices.
++-- Make it respect the caller's RLS and drop anonymous access.
++alter view public.invoice_totals set (security_invoker = true);
++revoke all on public.invoice_totals from anon;
++
++-- Messages: any signed-in member could read every conversation.
++drop policy "Members can read messages" on public.messages;
++create policy "Members read their own messages" on public.messages
++  for select to authenticated
++  using ((select auth.uid()) in (sender_id, recipient_id));
++
++-- get_contact_email is SECURITY DEFINER over auth.users and was executable by
++-- PUBLIC (so anon too). Only the backend emailer (service_role) should call it.
++revoke execute on function public.get_contact_email(uuid) from public, anon, authenticated;
++grant execute on function public.get_contact_email(uuid) to service_role;
++
++-- New functions in public should not be executable by PUBLIC by default.
++alter default privileges for role postgres in schema public
++  revoke execute on functions from public;
++
++-- Drafts are only touched by a background job. They had no API grants, but RLS
++-- was off; enable it (no policies) so a future grant can't expose them.
++alter table public.drafts enable row level security;
++revoke all on public.drafts from anon, authenticated;

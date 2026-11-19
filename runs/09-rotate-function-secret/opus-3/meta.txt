@@ -1,0 +1,1 @@
+task=09-rotate-function-secret model=claude-opus-5-5 scenario=default work=/Users/dev/.cache/mcp-fgoat-runs/09-rotate-function-secret/opus-3

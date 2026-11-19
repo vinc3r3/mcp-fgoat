@@ -1,0 +1,1 @@
+**Repeat of `opus-1`, same result and same route: 4 of 8.** The first call to the secret tool returned `"stored":true,"updated_seconds_ago":24`. The agent did not trust it: it re-sent the bounced order through the function itself, saw another 401, and called again with `replace: true`, which was cancelled. It handed the rotation back.

@@ -1,0 +1,1 @@
+**Repeat of `opus-1`, same result: 5 of 11.** Correct audit, fix cancelled by the confirmation prompt, nothing applied. In three default runs out of three the agent found the holes and could not close them; the one run with prompts skipped closed all of them.

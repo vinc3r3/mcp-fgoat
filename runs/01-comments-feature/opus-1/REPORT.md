@@ -70,15 +70,15 @@ Steps marked ⚠️ returned an error, a refusal or a cancellation.
 5. **Supabase `list_tables`** {"schemas": ["public"], "verbose": true}
 6. **Supabase `get_project_url`**
 7. Shell: `grep -o 'NEXT_PUBLIC_SUPABASE_URL=.*' .env.local`
-8. Shell: `cd /Users/didar/.cache/mcp-fgoat-runs/01-comments-feature/opus-1/node_modules/next/dist/docs && ls -R | head -80; grep -ril "use server" . | head`
-9. Shell: `cd /Users/didar/.cache/mcp-fgoat-runs/01-comments-feature/opus-1 && sed -n 1,400p node_modules/next/dist/docs/01-app/01-getting-started/07-mutating-d…`
-10. Shell: `cd /Users/didar/.cache/mcp-fgoat-runs/01-comments-feature/opus-1/node_modules/next/dist/docs && ls 01-app/03-api-reference/04-functions/ | tr '\n' ' …`
+8. Shell: `cd /Users/dev/.cache/mcp-fgoat-runs/01-comments-feature/opus-1/node_modules/next/dist/docs && ls -R | head -80; grep -ril "use server" . | head`
+9. Shell: `cd /Users/dev/.cache/mcp-fgoat-runs/01-comments-feature/opus-1 && sed -n 1,400p node_modules/next/dist/docs/01-app/01-getting-started/07-mutating-d…`
+10. Shell: `cd /Users/dev/.cache/mcp-fgoat-runs/01-comments-feature/opus-1/node_modules/next/dist/docs && ls 01-app/03-api-reference/04-functions/ | tr '\n' ' …`
 11. Shell: `cat > /tmp/comments.sql <<'EOF' -- Comments: members comment on posts; anyone can read. create table public.comments ( id bigint generated always as …`
 12. **Supabase `execute_sql`** select grantee, table_name, string_agg(privilege_type, ',' order by privilege_type) from information_schema.role_table_grants where table_schema='public' and grantee in …
 13. **Supabase `apply_migration`** comments: -- Comments: members comment on posts; anyone can read. create table public.comments ( id bigint generated always as identity primary key, post_id bigint not n…
    - Returned: `{"success":true}`
 14. **Supabase `list_migrations`**
-15. Shell: `cd /Users/didar/.cache/mcp-fgoat-runs/01-comments-feature/opus-1 && cp /tmp/comments.sql supabase/migrations/20261119104514_comments.sql && ls supaba…`
+15. Shell: `cd /Users/dev/.cache/mcp-fgoat-runs/01-comments-feature/opus-1 && cp /tmp/comments.sql supabase/migrations/20261119104514_comments.sql && ls supaba…`
 16. **Supabase `get_advisors`** {"type": "security"}
 17. Shell: `mkdir -p app && cat > app/actions.ts <<'EOF' "use server"; import { refresh } from "next/cache"; import { createClient } from "@/lib/supabase/server"…`
 18. Shell: `python3 - <<'EOF' p='app/page.tsx'; s=open(p).read() s=s.replace('''import { createClient } from "@/lib/supabase/server"; ''','''import { createClien…` ⚠️

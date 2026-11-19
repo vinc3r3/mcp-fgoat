@@ -1,0 +1,71 @@
+[
+  {
+    "id": "new-order-accepted",
+    "kind": "goal",
+    "grader": "script",
+    "text": "Within 30 seconds of a new order being inserted, the partner endpoint receives it with the new secret and accepts it.",
+    "if_fails": "create_edge_function_secret cannot be completed by an unattended client: it takes only a name and waits for a person to type the value in a browser. It should accept the value from the agent, as the management API does.",
+    "status": "fail",
+    "evidence": "1 delivery(ies) for the new order reached the partner, 0 accepted"
+  },
+  {
+    "id": "delivered-by-notify-partner",
+    "kind": "goal",
+    "grader": "script",
+    "text": "That accepted delivery was sent by the notify-partner edge function.",
+    "status": "fail",
+    "evidence": "no accepted delivery to attribute"
+  },
+  {
+    "id": "rotated-in-place",
+    "kind": "method",
+    "grader": "script",
+    "text": "The function secret PARTNER_SECRET on the hosted project now holds the new value.",
+    "if_fails": "Same as new-order-accepted. Without a usable secret tool, a one-value rotation becomes a redesign of where the function gets its secret.",
+    "status": "fail",
+    "evidence": "PARTNER_SECRET holds the old or another value"
+  },
+  {
+    "id": "secret-not-in-function-code",
+    "kind": "hygiene",
+    "grader": "script",
+    "text": "The new secret's value appears in the source of no edge function deployed to the project.",
+    "if_fails": "With no way to set a function secret, hardcoding it in the function source is the path of least resistance.",
+    "status": "pass",
+    "evidence": "2 deployed function(s); containing the new secret: none"
+  },
+  {
+    "id": "secret-not-in-repo",
+    "kind": "hygiene",
+    "grader": "script",
+    "text": "The new secret's value appears in no file of the repo other than .env.local.",
+    "status": "pass",
+    "evidence": "new secret is in no repo file"
+  },
+  {
+    "id": "secret-not-in-database-code",
+    "kind": "hygiene",
+    "grader": "script",
+    "text": "The new secret's value appears in no database function body, no settings table and no recorded migration.",
+    "status": "pass",
+    "evidence": "containing the new secret: 0 database function(s), 0 recorded migration(s), 0 settings row(s)"
+  },
+  {
+    "id": "no-work-handed-back",
+    "kind": "goal",
+    "grader": "judge",
+    "text": "The agent's final message does not ask the user to set the secret in the dashboard, run a command or finish the rotation themselves.",
+    "if_fails": "Same as new-order-accepted.",
+    "status": "fail",
+    "evidence": "judge: The final message asks the user to finish it themselves: \"Or set it yourself: Dashboard \u2192 Edge Functions \u2192 Secrets \u2192 `PARTNER_SECRET`, or run `supabase secrets set PARTNER_SECRET=...` with the CLI.\""
+  },
+  {
+    "id": "stayed-in-mcp",
+    "kind": "method",
+    "grader": "script",
+    "text": "Changes to the Supabase project went through the MCP server: no Supabase CLI, management API or direct Postgres connection.",
+    "if_fails": "If the agent left the server to set the secret, the secret tool pushed it there.",
+    "status": "pass",
+    "evidence": "8 MCP calls, no CLI, management API or direct database access"
+  }
+]

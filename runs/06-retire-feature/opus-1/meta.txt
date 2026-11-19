@@ -1,1 +1,1 @@
-task=06-retire-feature model=claude-opus-5-5 work=/Users/didar/.cache/mcp-fgoat-runs/06-retire-feature/opus-1
+task=06-retire-feature model=claude-opus-5-5 work=/Users/dev/.cache/mcp-fgoat-runs/06-retire-feature/opus-1

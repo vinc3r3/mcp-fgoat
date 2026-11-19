@@ -100,10 +100,10 @@ Steps marked ⚠️ returned an error, a refusal or a cancellation.
 30. **Supabase `list_migrations`**
 31. Write file `20261119115359_comments_grants.sql`
 32. Shell: `(npx next dev -p 3123 > /tmp/trailhead-dev.log 2>&1 &) ; for i in $(seq 1 30); do curl -s -o /dev/null http://localhost:3123/ && break; sleep 1; done…`
-33. Shell: `mkdir -p /tmp/trailhead-check && cat > /tmp/trailhead-check/roundtrip.cjs <<'EOF' const { createClient } = require("/Users/didar/.cache/mcp-fgoat-run…`
-34. Shell: `cat > /tmp/trailhead-check/cross-delete.cjs <<'EOF' const { createClient } = require("/Users/didar/.cache/mcp-fgoat-runs/01-comments-feature/haiku-1/…`
+33. Shell: `mkdir -p /tmp/trailhead-check && cat > /tmp/trailhead-check/roundtrip.cjs <<'EOF' const { createClient } = require("/Users/dev/.cache/mcp-fgoat-run…`
+34. Shell: `cat > /tmp/trailhead-check/cross-delete.cjs <<'EOF' const { createClient } = require("/Users/dev/.cache/mcp-fgoat-runs/01-comments-feature/haiku-1/…`
 35. **Supabase `execute_sql`** select count(*) as comment_rows from public.comments;
-36. Shell: `rm -rf /tmp/trailhead-check /tmp/trailhead-dev.log; cd /Users/didar/.cache/mcp-fgoat-runs/01-comments-feature/haiku-1 && git status --short && ls sup…`
+36. Shell: `rm -rf /tmp/trailhead-check /tmp/trailhead-dev.log; cd /Users/dev/.cache/mcp-fgoat-runs/01-comments-feature/haiku-1 && git status --short && ls sup…`
 
 ## The agent's final message
 

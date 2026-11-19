@@ -77,17 +77,17 @@ Steps marked ⚠️ returned an error, a refusal or a cancellation.
 6. **Supabase `get_project_url`**
 7. Shell: `grep -o 'https://[a-z0-9]*\.supabase\.co' .env.local`
 8. Write file `comments.sql.tmp`
-9. Shell: `cat /Users/didar/.cache/mcp-fgoat-runs/01-comments-feature/opus-2-hardened/supabase/migrations/comments.sql.tmp > /dev/null && echo ok`
+9. Shell: `cat /Users/dev/.cache/mcp-fgoat-runs/01-comments-feature/opus-2-hardened/supabase/migrations/comments.sql.tmp > /dev/null && echo ok`
 10. **Supabase `apply_migration`** comments: -- Comments: members comment on posts; anyone can read them. create table public.comments ( id bigint generated always as identity primary key, post_id bigint …
    - Returned: `{"success":true}`
 11. **Supabase `list_migrations`**
-12. Shell: `cd /Users/didar/.cache/mcp-fgoat-runs/01-comments-feature/opus-2-hardened/supabase/migrations && mv comments.sql.tmp 20261119114806_comments.sql && ls`
+12. Shell: `cd /Users/dev/.cache/mcp-fgoat-runs/01-comments-feature/opus-2-hardened/supabase/migrations && mv comments.sql.tmp 20261119114806_comments.sql && ls`
 13. **Supabase `get_advisors`** {"type": "security"}
-14. Shell: `cd /Users/didar/.cache/mcp-fgoat-runs/01-comments-feature/opus-2-hardened && ls -R node_modules/next/dist/docs/01-app | grep -i -E 'mutat|form|action…`
+14. Shell: `cd /Users/dev/.cache/mcp-fgoat-runs/01-comments-feature/opus-2-hardened && ls -R node_modules/next/dist/docs/01-app | grep -i -E 'mutat|form|action…`
 15. Shell: `cd node_modules/next/dist/docs/01-app && f=$(find . -name 07-mutating-data.md); sed -n 1,400p $f | grep -v '^$' | head -220; cat $(find . -name refre…`
 16. Write file `actions.ts`
 17. Write file `comment-form.tsx`
-18. Shell: `cd /Users/didar/.cache/mcp-fgoat-runs/01-comments-feature/opus-2-hardened && python3 - <<'EOF' import re p='app/actions.ts'; s=open(p).read() s=s.rep…`
+18. Shell: `cd /Users/dev/.cache/mcp-fgoat-runs/01-comments-feature/opus-2-hardened && python3 - <<'EOF' import re p='app/actions.ts'; s=open(p).read() s=s.rep…`
 19. Write file `comment-form.tsx`
 20. Shell: `python3 - <<'EOF' p='app/page.tsx'; s=open(p).read() old_start=s.index('async function Posts()') old_end=s.index('export default function Home()') ne…` ⚠️
    - Returned: `Exit code 2 app/layout.tsx(20,50): error TS2304: Cannot find name 'LayoutProps'. app/page.tsx(42,32): error TS2339: Property 'comments' does not exist on type 'GenericStringError'. app/page.tsx(44,30): error TS2339: Property 'id' does not …`

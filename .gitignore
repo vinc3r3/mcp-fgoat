@@ -6,3 +6,5 @@ node_modules/
 .DS_Store
 runs/*/*/workdir.txt
 runs/_selftest/
+__pycache__/
+*.pyc

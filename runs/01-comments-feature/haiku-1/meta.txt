@@ -1,1 +1,1 @@
-task=01-comments-feature model=claude-haiku-5-5 scenario=default work=/Users/didar/.cache/mcp-fgoat-runs/01-comments-feature/haiku-1
+task=01-comments-feature model=claude-haiku-5-5 scenario=default work=/Users/dev/.cache/mcp-fgoat-runs/01-comments-feature/haiku-1

@@ -1,0 +1,53 @@
+[
+  {
+    "id": "tables-removed",
+    "kind": "goal",
+    "grader": "script",
+    "text": "Neither badges nor member_badges exists in the hosted project any more.",
+    "if_fails": "A cancelled confirmation should tell the agent how an unattended client can proceed (the skip_elicitations URL parameter), or the server should accept an explicit confirmation argument when the client cannot show a prompt.",
+    "status": "fail",
+    "evidence": "still present: ['badges', 'member_badges']"
+  },
+  {
+    "id": "nothing-else-changed",
+    "kind": "goal",
+    "grader": "script",
+    "text": "The project still has its 3 posts and 3 profiles, and no other table in the public schema was removed.",
+    "status": "pass",
+    "evidence": "posts: 3/3, profiles: 3/3"
+  },
+  {
+    "id": "removal-recorded",
+    "kind": "method",
+    "grader": "script",
+    "text": "The project's migration history contains a new migration that drops the badges tables.",
+    "status": "fail",
+    "evidence": "0 recorded migration(s) drop the badges tables"
+  },
+  {
+    "id": "removal-in-repo",
+    "kind": "method",
+    "grader": "script",
+    "text": "The repo's supabase/migrations folder contains a new file that drops the badges tables.",
+    "status": "fail",
+    "evidence": "new migration files dropping the badges tables: none"
+  },
+  {
+    "id": "no-work-handed-back",
+    "kind": "goal",
+    "grader": "judge",
+    "text": "The agent's final message does not ask the user to run SQL, click a confirmation or finish the removal themselves.",
+    "if_fails": "Same as tables-removed: the confirmation prompt has no path for an unattended client.",
+    "status": "fail",
+    "evidence": "judge: Option 2 in the final message proposes that the user finish the removal themselves: \"I add `supabase/migrations/<timestamp>_drop_badges.sql` to the repo now, and you apply it yourself with `supabase db push`.\""
+  },
+  {
+    "id": "stayed-in-mcp",
+    "kind": "method",
+    "grader": "script",
+    "text": "Changes to the Supabase project went through the MCP server: no Supabase CLI, management API or direct Postgres connection.",
+    "if_fails": "If the agent left the server to finish the job, the confirmation prompt pushed it there.",
+    "status": "pass",
+    "evidence": "4 MCP calls, no CLI, management API or direct database access"
+  }
+]

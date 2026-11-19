@@ -1,0 +1,34 @@
+diff --git a/supabase/migrations/20261119000000_lock_down_private_data.sql b/supabase/migrations/20261119000000_lock_down_private_data.sql
+new file mode 100644
+index 0000000..75a2b7b
+--- /dev/null
++++ b/supabase/migrations/20261119000000_lock_down_private_data.sql
+@@ -0,0 +1,28 @@
++-- Close pre-launch data leaks: invoices, direct messages, member email addresses.
++
++-- Invoices: members only ever see their own; strangers see nothing.
++alter table public.invoices enable row level security;
++revoke all on public.invoices from anon;
++revoke all on public.invoices from authenticated;
++grant select on public.invoices to authenticated;
++create policy "Members read their own invoices" on public.invoices
++  for select to authenticated using ((select auth.uid()) = customer_id);
++
++-- invoice_totals: evaluate with the caller's permissions so the invoices policy applies.
++alter view public.invoice_totals set (security_invoker = true);
++revoke all on public.invoice_totals from anon;
++revoke all on public.invoice_totals from authenticated;
++grant select on public.invoice_totals to authenticated;
++
++-- Messages: only the sender and the recipient can read a message.
++drop policy "Members can read messages" on public.messages;
++create policy "Members read their own messages" on public.messages
++  for select to authenticated
++  using ((select auth.uid()) = sender_id or (select auth.uid()) = recipient_id);
++
++-- get_contact_email reads auth.users; it is for the server-side emailer only (service_role).
++revoke execute on function public.get_contact_email(uuid) from public, anon, authenticated;
++
++-- Drafts are only touched by a background job; keep them off the API even if grants change later.
++alter table public.drafts enable row level security;
++revoke all on public.drafts from anon, authenticated;

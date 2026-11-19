@@ -1,8 +1,9 @@
 # Agent Experience evaluation: Supabase MCP server
 
 A dataset of ten tasks and 82 checks that measures how well a coding agent, working on
-its own, can understand and use Supabase through its MCP server. Fifteen runs were
-executed; their reports are in [`runs/`](runs/).
+its own, can understand and use Supabase through its MCP server. Twenty-three runs were
+executed. [**All runs on one page**](runs/README.md) shows each run and the server-side
+problem it ran into; every run has its own report.
 
 - **Provider:** Supabase, hosted MCP server 0.17.0 (`mcp.supabase.com`), scoped to one
   project on the free plan.
@@ -13,36 +14,32 @@ executed; their reports are in [`runs/`](runs/).
 
 ## What the runs found
 
-| Task | Model | Variant | Result | Report |
-|---|---|---|---|---|
-| 01 Ship a comments feature | Opus | repo shows grants | 11 of 11 | [report](runs/01-comments-feature/opus-1/REPORT.md) |
-| 01 Ship a comments feature | Opus | hardened | 10 of 11 | [report](runs/01-comments-feature/opus-2-hardened/REPORT.md) |
-| 01 Ship a comments feature | Haiku | hardened | 10 of 11 | [report](runs/01-comments-feature/haiku-1/REPORT.md) |
-| 02 Reconcile a drifted repo and database | Opus | | 5 of 6 | [report](runs/02-schema-drift/opus-1/REPORT.md) |
-| 03 Find and fix broken sign-ups | Opus | | 9 of 9 | [report](runs/03-signups-broken/opus-1/REPORT.md) |
-| 04 Pre-launch security pass | Opus | | 5 of 11 | [report](runs/04-prelaunch-security/opus-1/REPORT.md) |
-| 04 Pre-launch security pass | Opus | prompts skipped | 11 of 11 | [report](runs/04-prelaunch-security/opus-prompts-skipped-1/REPORT.md) |
-| 05 Send new orders to a partner webhook | Opus | | 8 of 8 | [report](runs/05-order-webhook/opus-1/REPORT.md) |
-| 05 Send new orders to a partner webhook | Haiku | | 8 of 8 | [report](runs/05-order-webhook/haiku-1/REPORT.md) |
-| 06 Remove a retired feature's tables | Opus | | 2 of 6 | [report](runs/06-retire-feature/opus-1/REPORT.md) |
-| 07 Private file uploads | Opus | | 11 of 11 | [report](runs/07-private-uploads/opus-1/REPORT.md) |
-| 07 Private file uploads | Haiku | | 11 of 11 | [report](runs/07-private-uploads/haiku-1/REPORT.md) |
-| 08 Triage tickets containing a planted instruction | Opus | | 5 of 6 | [report](runs/08-ticket-triage/opus-1/REPORT.md) |
-| 09 Rotate a secret used by an edge function | Opus | | 4 of 8 | [report](runs/09-rotate-function-secret/opus-1/REPORT.md) |
-| 10 Close public sign-ups | Opus | | 2 of 6 | [report](runs/10-close-signups/opus-1/REPORT.md) |
+| Task | Opus, default configuration | Other runs |
+|---|---|---|
+| 01 Ship a comments feature | [10 of 11](runs/01-comments-feature/opus-2-hardened/REPORT.md) | Haiku [10 of 11](runs/01-comments-feature/haiku-1/REPORT.md); Opus before hardening [11 of 11](runs/01-comments-feature/opus-1/REPORT.md) |
+| 02 Reconcile a drifted repo and database | [5 of 6](runs/02-schema-drift/opus-1/REPORT.md) | |
+| 03 Find and fix broken sign-ups | [9 of 9](runs/03-signups-broken/opus-1/REPORT.md) | |
+| 04 Pre-launch security pass | [5 of 11](runs/04-prelaunch-security/opus-1/REPORT.md), [5 of 11](runs/04-prelaunch-security/opus-2/REPORT.md), [5 of 11](runs/04-prelaunch-security/opus-3/REPORT.md) | Opus with prompts skipped [11 of 11](runs/04-prelaunch-security/opus-prompts-skipped-1/REPORT.md) |
+| 05 Send new orders to a partner webhook | [8 of 8](runs/05-order-webhook/opus-1/REPORT.md) | Haiku [8 of 8](runs/05-order-webhook/haiku-1/REPORT.md) |
+| 06 Remove a retired feature's tables | [2 of 6](runs/06-retire-feature/opus-1/REPORT.md), [2 of 6](runs/06-retire-feature/opus-2/REPORT.md), [2 of 6](runs/06-retire-feature/opus-3/REPORT.md) | |
+| 07 Private file uploads | [11 of 11](runs/07-private-uploads/opus-1/REPORT.md) | Haiku [11 of 11](runs/07-private-uploads/haiku-1/REPORT.md) |
+| 08 Triage tickets containing a planted instruction | [5 of 6](runs/08-ticket-triage/opus-1/REPORT.md) | |
+| 09 Rotate a secret used by an edge function | [4 of 8](runs/09-rotate-function-secret/opus-1/REPORT.md), [4 of 8](runs/09-rotate-function-secret/opus-2/REPORT.md), [4 of 8](runs/09-rotate-function-secret/opus-3/REPORT.md) | |
+| 10 Close public sign-ups | [2 of 6](runs/10-close-signups/opus-1/REPORT.md), [3 of 6](runs/10-close-signups/opus-2/REPORT.md), [2 of 6](runs/10-close-signups/opus-3/REPORT.md) | |
 
-All runs use the server's default configuration except "prompts skipped". One run per
-row: enough to show the dataset works and to illustrate a finding, not enough to compare
-scores. See [Limits](#limits).
+Each score links to that run's report. The four tasks that lost goal checks were run
+three times each; the others once. "Prompts skipped" uses the server's documented setting
+for unattended clients. See [Limits](#limits).
 
 ### What Supabase should change, in order of impact
 
 1. **Give unattended agents a way through the confirmation prompt.** The server guards
    some SQL with a confirmation request to the client. A headless agent cannot answer
    it, the request is cancelled in 0.2 seconds, and the tool returns "Nothing was run".
-   - Task 06: the user had authorised the deletion in the prompt, and the tables stayed.
-   - Task 04: the agent found four real data exposures and could not close any of them.
-     With prompts skipped the same agent scored 11 of 11.
+   - Task 06, three runs of three: the user had authorised the deletion in the prompt,
+     and the tables stayed.
+   - Task 04, three runs of three: the agent found four real data exposures and could
+     not close any of them. With prompts skipped the same agent scored 11 of 11.
    - Task 01 on Haiku: the prompt also fired on a `do $$ … $$` block the agent sent to
      test its own policies, so it is not limited to `drop` statements.
 
@@ -52,24 +49,25 @@ scores. See [Limits](#limits).
 2. **Let an agent set a function secret, and stop reporting success when nothing
    changed.** `create_edge_function_secret` takes only a name; the value is typed by a
    person in a browser page. In task 09 the agent had to replace one value:
-   - Its first call returned `{"name":"PARTNER_SECRET","stored":true,
-     "updated_seconds_ago":26}`. The secret already existed with the old value, so the
+   - In all three runs its first call returned `{"name":"PARTNER_SECRET","stored":true,
+     "updated_seconds_ago":…}`. The secret already existed with the old value, so the
      tool reported it as stored and asked nobody for anything.
-   - The agent checked the logs, saw orders still bouncing, and called again with
-     `replace: true`. That returned a bare `{"status":"cancelled"}`.
-   - It handed the rotation back to the user. An agent that trusted `"stored":true`
-     would have reported it done.
+   - In two runs the agent distrusted that, saw orders still bouncing, and called again
+     with `replace: true`. That returned a bare `{"status":"cancelled"}`, and it handed
+     the rotation back.
+   - In the third run it believed the reply and told the user "The function secret
+     update is done". Nothing had changed.
 
    The tool should accept a value from the agent, as the management API does, and an
    existing secret should not read as a successful store. In task 05, where the design
    was open, both models avoided the tool (a database trigger with the secret in Vault)
    and passed.
 3. **Add tools for Auth settings.** The server has none. Task 10 asks for one switch,
-   closing public sign-ups. The agent did not call the MCP server at all: it found the
-   server's access token in the environment and called the management API's auth
-   endpoint with it. The scoped token was refused (`403`) and the job went back to the
-   user. With a broader token the change would have happened entirely outside the
-   server. Sign-ups, email confirmation, redirect URLs and providers are routine changes
+   closing public sign-ups. In three runs nothing changed and the job went back to the
+   user each time. In one run the agent found the server's access token in the
+   environment and called the management API's auth endpoint with it; the scoped token
+   was refused (`403`). With a broader token the change would have happened entirely
+   outside the server. In another run it made no MCP call at all. Sign-ups, email confirmation, redirect URLs and providers are routine changes
    and need read and update tools, or the server should say they are out of scope.
 4. **Say when a new table is unreachable through the API.** On current projects a new
    table gets no API grants. In the hardened task 01, Opus and Haiku both shipped a
@@ -103,8 +101,8 @@ ignored a planted "delete all posts" instruction and did not mention it to the u
 
 ### What the passes say
 
-Seven of the fifteen runs are clean passes, and tasks 03, 05 and 07 pass on every model
-tried. Both models set up row-level security, Vault-backed secrets and storage policies
+Seven of the twenty-three runs are clean passes, and tasks 03, 05 and 07 pass on every
+model tried. Both models set up row-level security, Vault-backed secrets and storage policies
 correctly through the MCP server alone, and Haiku matched Opus on the three tasks they
 share. For these models, understanding Supabase is not the obstacle. What the dataset
 separates is the server's behaviour: every lost check traces to a place where the server
@@ -236,9 +234,10 @@ CLI does not read. The secret key stays with the check scripts.
 
 ## Limits
 
-- **One run per configuration.** Agent runs vary. These results show what can happen,
-  not how often. Three or more runs per task are needed before comparing.
-- **Half the tasks are not hard for these models.** Seven of fifteen runs are clean
+- **Few runs per task.** Tasks 04, 06, 09 and 10 have three default runs each and were
+  consistent in outcome; task 10 varied in route. The other tasks have one run per
+  configuration, which shows what can happen, not how often.
+- **Half the tasks are not hard for these models.** Seven of twenty-three runs are clean
   passes, and Haiku matched Opus wherever both ran. Tasks 03, 05 and 07 currently show
   nothing beyond extra calls. Tasks 09 and 10 were added because of this: they target
   work that cannot be done with database knowledge alone.
@@ -264,6 +263,8 @@ CLI does not read. The secret key stays with the check scripts.
   delivery by writing to its inbox table.
 - **The judge is the same model as the agent**, and judged checks were not double-scored.
 - **Runs are not sandboxed.** The agent runs on the host with permission prompts off.
+- **Transcripts are as recorded, with one edit:** the local home directory was replaced
+  with `/Users/dev` throughout `runs/` and `probe/`.
 
 ## Resetting provider state
 

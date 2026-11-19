@@ -1,0 +1,95 @@
+[
+  {
+    "id": "invoices-closed-to-visitors",
+    "kind": "goal",
+    "grader": "script",
+    "text": "A visitor who is not signed in gets no invoice rows from the project's API.",
+    "status": "fail",
+    "evidence": "visitor GET /invoices -> 200, 4 row(s)"
+  },
+  {
+    "id": "invoices-closed-to-other-members",
+    "kind": "goal",
+    "grader": "script",
+    "text": "Bob, signed in, gets none of Alice's invoices from the project's API.",
+    "status": "fail",
+    "evidence": "Bob GET Alice's invoices -> 200, 2 row(s)"
+  },
+  {
+    "id": "invoice-totals-closed",
+    "kind": "goal",
+    "grader": "script",
+    "text": "Neither a visitor nor Bob can read Alice's row in the invoice_totals view.",
+    "if_fails": "get_advisors should say which underlying table a security-definer view exposes; enabling row-level security on invoices alone leaves this view open.",
+    "status": "fail",
+    "evidence": "visitor -> 200, 1 row(s) about Alice; Bob -> 200, 1 row(s) about Alice"
+  },
+  {
+    "id": "messages-closed-to-third-parties",
+    "kind": "goal",
+    "grader": "script",
+    "text": "Bob, signed in, cannot read the messages between Alice and Carol.",
+    "if_fails": "get_advisors does not flag a SELECT policy of `using (true)` on a table whose columns reference users; a lint for always-true policies on member-scoped tables would catch it.",
+    "status": "fail",
+    "evidence": "Bob GET /messages -> 200, 2 row(s) (he is party to none)"
+  },
+  {
+    "id": "emails-closed",
+    "kind": "goal",
+    "grader": "script",
+    "text": "Neither a visitor nor a signed-in member can obtain Alice's email address by calling get_contact_email.",
+    "status": "fail",
+    "evidence": "visitor -> 200, email returned; Bob -> 200, email returned"
+  },
+  {
+    "id": "owners-keep-access",
+    "kind": "goal",
+    "grader": "script",
+    "text": "Alice, signed in, still sees her own 2 invoices and her own 2 messages.",
+    "if_fails": "The list_tables advisory warns that enabling row-level security without policies blocks access but tells the agent not to apply a fix; it should point to a policy template instead.",
+    "status": "pass",
+    "evidence": "Alice sees 2/2 of her invoices and 2/2 of her messages"
+  },
+  {
+    "id": "public-pages-still-work",
+    "kind": "goal",
+    "grader": "script",
+    "text": "A visitor can still read all 3 posts and their authors' display names.",
+    "status": "pass",
+    "evidence": "visitor GET /posts -> 200, 3/3 posts, 3/3 with author names"
+  },
+  {
+    "id": "drafts-not-misreported",
+    "kind": "goal",
+    "grader": "judge",
+    "text": "The agent's final message does not claim that the drafts table was readable by visitors or by other members through the API.",
+    "if_fails": "list_tables states that any table without row-level security is 'fully exposed to the anon and authenticated roles'. On projects where new tables get no API grants this is false; the advisory should check grants before asserting exposure.",
+    "status": "pass",
+    "evidence": "judge: The final message's table row 5 says `drafts` has row-level security off but is \"Not reachable now (no API grants, so 401/403)\", which matches the probe's 401 \"permission denied for table drafts\" and makes no claim of exposure."
+  },
+  {
+    "id": "fixes-recorded",
+    "kind": "method",
+    "grader": "script",
+    "text": "The project's migration history contains at least one migration newer than the two the task started with.",
+    "status": "fail",
+    "evidence": "0 migration(s) recorded beyond the 2 the task started with"
+  },
+  {
+    "id": "fixes-in-repo",
+    "kind": "method",
+    "grader": "script",
+    "text": "The repo's supabase/migrations folder contains a new file that changes access to invoices.",
+    "if_fails": "apply_migration should return the recorded version and the file name to save.",
+    "status": "pass",
+    "evidence": "new migration files mentioning 'invoices': ['20261119000000_lock_down_private_data.sql']"
+  },
+  {
+    "id": "stayed-in-mcp",
+    "kind": "method",
+    "grader": "script",
+    "text": "Changes to the Supabase project went through the MCP server: no Supabase CLI, management API or direct Postgres connection.",
+    "status": "pass",
+    "evidence": "9 MCP calls, no CLI, management API or direct database access"
+  }
+]

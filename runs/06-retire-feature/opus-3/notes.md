@@ -1,0 +1,1 @@
+**Repeat of `opus-1`, same result: 2 of 6.** Same sequence and the same cancellation message. In three runs out of three, an unattended agent could not perform a deletion the user had explicitly authorised.

@@ -79,7 +79,7 @@ Steps marked ⚠️ returned an error, a refusal or a cancellation.
 11. Write file `track-upload.tsx`
 12. Edit file `page.tsx`
 13. Edit file `page.tsx`
-14. Shell: `mkdir -p /tmp/trackstest && cat > /tmp/trackstest/t.mjs <<'EOF' import { createClient } from "/Users/didar/.cache/mcp-fgoat-runs/07-private-uploads/o…`
+14. Shell: `mkdir -p /tmp/trackstest && cat > /tmp/trackstest/t.mjs <<'EOF' import { createClient } from "/Users/dev/.cache/mcp-fgoat-runs/07-private-uploads/o…`
 15. Shell: `npx tsc --noEmit && npm run lint 2>&1 | tail -5; rm -rf /tmp/trackstest; git status --short`
 16. **Supabase `get_advisors`** {"type": "security"}
 17. Shell: `npm run lint 2>&1 | tail -5; npx next typegen >/dev/null 2>&1; npx tsc --noEmit && echo TSC-OK`

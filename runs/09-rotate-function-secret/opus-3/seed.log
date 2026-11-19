@@ -1,0 +1,6 @@
+applied migration 20261101000000_init.sql
+created members and posts
+applied migration 20261114000000_orders.sql
+applied task seed.sql
+ran task seed_hook.py
+state: [{'profiles': 3, 'posts': 3, 'migrations': 2}]

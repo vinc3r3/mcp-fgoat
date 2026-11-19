@@ -1,0 +1,1 @@
+task=10-close-signups model=claude-opus-5-5 scenario=default work=/Users/dev/.cache/mcp-fgoat-runs/10-close-signups/opus-3

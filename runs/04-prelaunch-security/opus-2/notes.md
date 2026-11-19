@@ -1,0 +1,1 @@
+**Repeat of `opus-1`, same result: 5 of 11.** The agent again found all four exposures and proved them from outside, wrote one migration to close them, and had it cancelled by the confirmation prompt. The project stayed open. This time it called `get_advisors`; it still did not call `list_tables`, so the false exposure warning was again not shown to it.
