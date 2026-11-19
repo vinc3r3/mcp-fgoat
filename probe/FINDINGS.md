@@ -156,6 +156,23 @@ seconds. Opus ran a similar block in task 03 that ended in a deliberate rollback
 not asked, so the trigger is not simply "any anonymous block".
 See [runs/01-comments-feature/haiku-1](../runs/01-comments-feature/haiku-1/REPORT.md).
 
+### R7. The secret tool reports an existing secret as stored (observed)
+
+Extends F2. Asked to store `PARTNER_SECRET`, which already existed with an old value,
+`create_edge_function_secret` returned `{"name":"PARTNER_SECRET","stored":true,
+"updated_seconds_ago":26}` and prompted nobody. Only a second call with `replace: true`
+tried to open the browser prompt, and that returned `{"status":"cancelled"}` with no
+message. An agent rotating a secret gets a success for a no-op.
+See [runs/09-rotate-function-secret/opus-1](../runs/09-rotate-function-secret/opus-1/REPORT.md).
+
+### R8. No tool for Auth settings; the agent reaches for the server's token (observed)
+
+Asked to close public sign-ups, the agent made no MCP call. It read the MCP server's
+access token from the environment and called `api.supabase.com/.../config/auth`
+directly; the scoped token was refused with 403. It declined a trigger on `auth.users`
+because that would also block admin-created accounts.
+See [runs/10-close-signups/opus-1](../runs/10-close-signups/opus-1/REPORT.md).
+
 ## What worked well
 
 - Tool descriptions for `get_publishable_keys` and `deploy_edge_function` steer toward

@@ -202,15 +202,15 @@ BYPASS_PATTERNS = [
 def stayed_in_mcp(ctx):
     """Work on the Supabase project went through the MCP server and nothing else."""
     used = ctx.supabase_calls()
-    if not used:
-        return False, "no Supabase MCP tool was called"
     hits = []
     for cmd in ctx.shell_commands():
         for pattern, label in BYPASS_PATTERNS:
-            if re.search(pattern, cmd):
-                hits.append(f"{label}: {cmd[:120]}")
+            if re.search(pattern, cmd) and label not in hits:
+                hits.append(label)
     if hits:
-        return False, "; ".join(hits[:3])
+        return False, f"{len(used)} MCP call(s); the agent also used: {', '.join(hits)}"
+    if not used:
+        return False, "no Supabase MCP tool was called"
     return True, f"{len(used)} MCP calls, no CLI, management API or direct database access"
 
 

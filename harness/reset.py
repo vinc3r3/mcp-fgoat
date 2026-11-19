@@ -2,7 +2,7 @@
 """Return the eval project to an empty state.
 
 Drops everything in the public schema, clears the migration history, and removes auth
-users, storage buckets with their files and policies, and all edge functions. Uses the management API with the access
+users, storage buckets with their files and policies, edge functions and their secrets. Uses the management API with the access
 token from .env. Run before seeding a task.
 """
 import json
@@ -38,6 +38,9 @@ end $$;
 delete from auth.users;
 do $$ begin
   if to_regclass('vault.secrets') is not null then delete from vault.secrets; end if;
+  -- pg_net keeps past webhook responses; an agent can read them, so they must not carry over.
+  if to_regclass('net._http_response') is not null then delete from net._http_response; end if;
+  if to_regclass('net.http_request_queue') is not null then delete from net.http_request_queue; end if;
 end $$;
 do $$ declare p record; begin
   for p in select policyname from pg_policies where schemaname = 'storage' and tablename = 'objects' loop
@@ -75,6 +78,9 @@ def reset_all():
     sql(RESET_SQL)
     for fn in api("GET", "/functions") or []:
         api("DELETE", f"/functions/{fn['slug']}")
+    custom = [s["name"] for s in api("GET", "/secrets") or [] if not s["name"].startswith("SUPABASE_")]
+    if custom:
+        api("DELETE", "/secrets", custom)
 
 
 def api(method, path, body=None):

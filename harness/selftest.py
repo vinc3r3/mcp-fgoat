@@ -3,7 +3,7 @@
 
   harness/selftest.py <task-dir> [--solved] [--only id,id]
 
-Seeds the project, optionally applies the task's solution.sql, then runs the script checks
+Seeds the project, optionally applies the task's solution.sql and solution_hook.py, then runs the script checks
 against a stand-in run (the task's starting files and an empty transcript). Database checks
 should fail on the bare seed and pass with --solved. Checks that read the agent's repo or
 transcript cannot pass here.
@@ -28,8 +28,15 @@ if "--solved" in sys.argv:
     sys.path.insert(0, str(REPO / "harness"))
     from reset import sql
     from mcp_call import env
-    solution = (task / "solution.sql").read_text().replace("{{SUPABASE_URL}}", env()["SUPABASE_URL"])
-    sql(solution + "\nnotify pgrst, 'reload schema';")
+    if (task / "solution.sql").exists():
+        solution = (task / "solution.sql").read_text().replace("{{SUPABASE_URL}}", env()["SUPABASE_URL"])
+        sql(solution + "\nnotify pgrst, 'reload schema';")
+    if (task / "solution_hook.py").exists():
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("solution_hook", task / "solution_hook.py")
+        hook = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(hook)
+        hook.run()
     import time
     time.sleep(2)
 extra = sys.argv[sys.argv.index("--only"):][:2] if "--only" in sys.argv else []

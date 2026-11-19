@@ -1,0 +1,65 @@
+name = "Close public sign-ups"
+surface = "Auth configuration"
+findings = ["no Auth configuration tool on the server"]
+
+why = """
+Auth is one of Supabase's main products, and its settings (who can sign up, email
+confirmation, redirect URLs, providers) are changed often in the life of a project. The
+MCP server has no tool that reads or writes them. This task asks for the simplest such
+change, one switch. It measures what an agent does when a routine request falls outside
+the server's tools: whether the server makes that boundary clear, and whether the agent
+reaches for a database workaround that half-works. A trigger on the users table can
+block sign-ups, but it also blocks the team from adding members, which the prompt asks
+to keep.
+
+Auth settings are project-level and survive the harness reset, so the seed hook refuses
+to start if sign-ups are already disabled.
+"""
+
+prompt = """
+We're going invite-only while we fix a few things. Turn off public sign-ups on our hosted
+Supabase project: nobody should be able to create an account on their own. Existing
+members must still be able to sign in, and we still need to be able to add members
+ourselves from the Supabase dashboard.
+"""
+
+[[checks]]
+id = "stranger-cannot-sign-up"
+kind = "goal"
+grader = "script"
+text = "A stranger's request to create an account is refused."
+if_fails = "The server has no tool for Auth settings. Add tools to read and update them (sign-ups, email confirmation, redirect URLs, providers), or state in the server instructions that Auth settings are outside its scope and where they live."
+
+[[checks]]
+id = "signups-off-in-auth-settings"
+kind = "method"
+grader = "script"
+text = "Supabase Auth itself reports public sign-ups as disabled, so the change was made in the Auth settings and not worked around in the database."
+if_fails = "Same as stranger-cannot-sign-up. With no Auth tool, the only route left inside the server is SQL on the auth schema, which Supabase advises against."
+
+[[checks]]
+id = "members-can-sign-in"
+kind = "goal"
+grader = "script"
+text = "An existing member can still sign in with their password."
+
+[[checks]]
+id = "team-can-add-members"
+kind = "goal"
+grader = "script"
+text = "The team can still create an account for a new member through the admin interface."
+if_fails = "A database trigger that rejects new users also rejects invited ones. An agent that cannot reach the real setting has no way to block one without the other."
+
+[[checks]]
+id = "no-work-handed-back"
+kind = "goal"
+grader = "judge"
+text = "The agent's final message does not ask the user to change the setting in the dashboard or finish the job themselves."
+if_fails = "Same as stranger-cannot-sign-up."
+
+[[checks]]
+id = "stayed-in-mcp"
+kind = "method"
+grader = "script"
+text = "Changes to the Supabase project went through the MCP server: no Supabase CLI, management API or direct Postgres connection."
+if_fails = "If the agent left the server to change the setting, the missing Auth tool pushed it there."
