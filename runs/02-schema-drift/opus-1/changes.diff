@@ -1,0 +1,34 @@
+diff --git a/supabase/migrations/20261119000000_post_pinning_and_reactions.sql b/supabase/migrations/20261119000000_post_pinning_and_reactions.sql
+new file mode 100644
+index 0000000..8f18fae
+--- /dev/null
++++ b/supabase/migrations/20261119000000_post_pinning_and_reactions.sql
+@@ -0,0 +1,28 @@
++-- Captures schema changes that were originally made directly in the Supabase
++-- dashboard on production, so a database built from these migrations matches it.
++-- On production this migration was recorded in the history without being re-run,
++-- because these objects already existed there.
++
++-- Pinned posts.
++alter table public.posts add column pinned boolean not null default false;
++
++-- Emoji reactions on posts, one per member per emoji.
++create table public.post_reactions (
++  post_id bigint not null references public.posts (id) on delete cascade,
++  member_id uuid not null references public.profiles (id) on delete cascade,
++  emoji text not null,
++  created_at timestamptz not null default now(),
++  primary key (post_id, member_id, emoji)
++);
++
++alter table public.post_reactions enable row level security;
++
++grant select on public.post_reactions to anon, authenticated;
++grant insert, delete on public.post_reactions to authenticated;
++
++create policy "Reactions are public" on public.post_reactions
++  for select using (true);
++create policy "Members react as themselves" on public.post_reactions
++  for insert to authenticated with check ((select auth.uid()) = member_id);
++create policy "Members remove their own reactions" on public.post_reactions
++  for delete to authenticated using ((select auth.uid()) = member_id);

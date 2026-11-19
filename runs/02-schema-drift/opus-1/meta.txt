@@ -1,0 +1,1 @@
+task=02-schema-drift model=claude-opus-5-5 scenario=default work=/Users/didar/.cache/mcp-fgoat-runs/02-schema-drift/opus-1

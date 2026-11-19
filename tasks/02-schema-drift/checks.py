@@ -1,4 +1,6 @@
 """Checks for 02-schema-drift. Each function returns (passed, evidence)."""
+import re
+
 from checklib import Fail, scalar, sql, stayed_in_mcp  # noqa: F401
 from reset import RESET_SQL
 
@@ -31,6 +33,15 @@ def history_matches_repo(ctx):
     local = {p.name.split("_", 1)[0] for p in (ctx.workdir / "supabase/migrations").glob("*.sql")}
     return remote == local, (f"only in project history: {sorted(remote - local) or 'none'}; "
                              f"only in repo: {sorted(local - remote) or 'none'}")
+
+
+def history_not_hand_edited(ctx):
+    writes = [args.get("query", "") for tool, args in ctx.supabase_calls()
+              if tool == "execute_sql" and re.search(
+                  r"(insert\s+into|update|delete\s+from)\s+supabase_migrations\.schema_migrations",
+                  args.get("query", ""), re.I)]
+    return not writes, (f"{len(writes)} execute_sql call(s) wrote to supabase_migrations.schema_migrations"
+                        if writes else "the history table was only changed by apply_migration")
 
 
 def repo_rebuilds_production(ctx):

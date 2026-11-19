@@ -1,0 +1,129 @@
+diff --git a/app/page.tsx b/app/page.tsx
+index 53618de..2b2d8f8 100644
+--- a/app/page.tsx
++++ b/app/page.tsx
+@@ -1,10 +1,19 @@
+ import { Suspense } from "react";
+ import { createClient } from "@/lib/supabase/server";
++import TrackUpload from "./track-upload";
+ 
+ async function Account() {
+   const supabase = await createClient();
+   const { data } = await supabase.auth.getUser();
+-  return data.user ? <p>Signed in as {data.user.email}</p> : <p><a href="/login">Sign in</a></p>;
++  if (!data.user) {
++    return <p><a href="/login">Sign in</a></p>;
++  }
++  return (
++    <>
++      <p>Signed in as {data.user.email}</p>
++      <TrackUpload userId={data.user.id} />
++    </>
++  );
+ }
+ 
+ async function Posts() {
+diff --git a/app/track-upload.tsx b/app/track-upload.tsx
+new file mode 100644
+index 0000000..2132f82
+--- /dev/null
++++ b/app/track-upload.tsx
+@@ -0,0 +1,55 @@
++"use client";
++
++import { useState } from "react";
++import { createClient } from "@/lib/supabase/client";
++
++const MAX_BYTES = 5 * 1024 * 1024;
++
++export default function TrackUpload({ userId }: { userId: string }) {
++  const [status, setStatus] = useState<string | null>(null);
++  const [busy, setBusy] = useState(false);
++
++  async function upload(formData: FormData) {
++    const file = formData.get("track");
++    if (!(file instanceof File) || file.size === 0) {
++      setStatus("Choose a GPX file first.");
++      return;
++    }
++    if (!file.name.toLowerCase().endsWith(".gpx")) {
++      setStatus("Only .gpx files can be uploaded.");
++      return;
++    }
++    if (file.size > MAX_BYTES) {
++      setStatus("That file is over 5 MB.");
++      return;
++    }
++
++    setBusy(true);
++    setStatus(null);
++    const supabase = createClient();
++    const safeName = file.name.replace(/[^\w.-]+/g, "_");
++    // Browsers rarely know the GPX MIME type, so set it explicitly; the bucket
++    // only accepts application/gpx+xml.
++    const { error } = await supabase.storage
++      .from("tracks")
++      .upload(`${userId}/${safeName}`, file, {
++        contentType: "application/gpx+xml",
++        upsert: true,
++      });
++    setBusy(false);
++    setStatus(error ? `Upload failed: ${error.message}` : `Uploaded ${safeName}.`);
++  }
++
++  return (
++    <form action={upload} style={{ display: "flex", gap: 12, alignItems: "center", margin: "16px 0" }}>
++      <label>
++        GPX track{" "}
++        <input name="track" type="file" accept=".gpx,application/gpx+xml" required />
++      </label>
++      <button type="submit" disabled={busy}>
++        {busy ? "Uploading…" : "Upload"}
++      </button>
++      {status && <span role="status">{status}</span>}
++    </form>
++  );
++}
+diff --git a/supabase/migrations/20261119111111_tracks_storage.sql b/supabase/migrations/20261119111111_tracks_storage.sql
+new file mode 100644
+index 0000000..0e944a6
+--- /dev/null
++++ b/supabase/migrations/20261119111111_tracks_storage.sql
+@@ -0,0 +1,37 @@
++-- GPX tracks attached to trip reports.
++-- Private bucket: only signed-in members can read; files live under <user id>/...
++insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
++values ('tracks', 'tracks', false, 5242880, array['application/gpx+xml'])
++on conflict (id) do update set
++  public = excluded.public,
++  file_size_limit = excluded.file_size_limit,
++  allowed_mime_types = excluded.allowed_mime_types;
++
++create policy "Members read tracks" on storage.objects
++  for select to authenticated
++  using (bucket_id = 'tracks');
++
++create policy "Members upload tracks to their own folder" on storage.objects
++  for insert to authenticated
++  with check (
++    bucket_id = 'tracks'
++    and (storage.foldername(name))[1] = (select auth.uid())::text
++  );
++
++create policy "Members replace their own tracks" on storage.objects
++  for update to authenticated
++  using (
++    bucket_id = 'tracks'
++    and (storage.foldername(name))[1] = (select auth.uid())::text
++  )
++  with check (
++    bucket_id = 'tracks'
++    and (storage.foldername(name))[1] = (select auth.uid())::text
++  );
++
++create policy "Members delete their own tracks" on storage.objects
++  for delete to authenticated
++  using (
++    bucket_id = 'tracks'
++    and (storage.foldername(name))[1] = (select auth.uid())::text
++  );

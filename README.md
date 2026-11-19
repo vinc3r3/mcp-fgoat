@@ -1,7 +1,7 @@
 # Agent Experience evaluation: Supabase MCP server
 
-A dataset of eight tasks that measures how well a coding agent, working on its own, can
-understand and use Supabase through its MCP server. Five runs were executed to confirm
+A dataset of eight tasks and 67 checks that measures how well a coding agent, working on its own, can
+understand and use Supabase through its MCP server. Seven runs were executed to confirm
 the dataset works; their reports are in [`runs/`](runs/).
 
 - **Provider:** Supabase, hosted MCP server 0.17.0 (`mcp.supabase.com`), scoped to one
@@ -19,6 +19,8 @@ the dataset works; their reports are in [`runs/`](runs/).
 | 04 Pre-launch security pass | prompts skipped | 11 of 11 | [report](runs/04-prelaunch-security/opus-prompts-skipped-1/REPORT.md) |
 | 01 Ship a comments feature | default | 10 of 10 | [report](runs/01-comments-feature/opus-1/REPORT.md) |
 | 05 Send new orders to a partner webhook | default | 8 of 8 | [report](runs/05-order-webhook/opus-1/REPORT.md) |
+| 02 Reconcile a drifted repo and database | default | 5 of 6 | [report](runs/02-schema-drift/opus-1/REPORT.md) |
+| 07 Private file uploads | default | 11 of 11 | [report](runs/07-private-uploads/opus-1/REPORT.md) |
 
 One run per row. That is enough to show the dataset works and to illustrate a finding,
 not enough to compare scores; see [Limits](#limits).
@@ -33,10 +35,19 @@ not enough to compare scores; see [Limits](#limits).
    of them; with prompts skipped the same agent scored 11 of 11. The cancellation message
    should name the documented `skip_elicitations` setting, or the tools should accept an
    explicit confirmation argument when the client cannot show a prompt.
-2. **Return the recorded version from `apply_migration`.** It returns `{"success":true}`.
-   In all three passing runs the agent needed a second call (`list_migrations`) to learn
-   the version so it could name the repo file, and in two it had to rename a file it had
-   already written. Returning the version, or the file name to save, removes both steps.
+2. **Make `apply_migration` able to reconcile, and return what it recorded.** It
+   assigns its own version, always executes, and returns only `{"success":true}`.
+   - In task 02 the agent needed to record migrations under the repo's version numbers,
+     one of them without running it. It bypassed the tool and inserted rows straight into
+     the internal `supabase_migrations.schema_migrations` table with `execute_sql`. The
+     outcome was correct; the route is one no provider wants agents to take. A version
+     argument and a record-only mode (the CLI's `migration repair`) would close it.
+   - In all four runs that applied a migration, the agent needed a second call
+     (`list_migrations`) to learn the assigned version, and in two it renamed a file it
+     had already written. Returning the version removes both steps.
+   - There is no tool to read the live schema back as SQL. In task 02 the agent rebuilt
+     a migration from five catalog queries and verified it against a local Postgres it
+     started itself. A schema dump or diff tool would replace that.
 3. **Let an agent set a function secret.** `create_edge_function_secret` takes only a
    name; the value is typed by a person in a browser page. Headless, it returns a bare
    `{"status":"cancelled"}`. Observed in the probe. In task 05 the agent avoided the tool
@@ -48,8 +59,9 @@ not enough to compare scores; see [Limits](#limits).
    Observed in the probe, where the agent repeated the claim to the user; not triggered
    in the task runs, because the agent did not call `list_tables` there.
 
-**What the passes say.** On tasks 01 and 05 the agent scored full marks through the MCP
-server alone, including getting grants, row-level security and secret handling right.
+**What the passes say.** On tasks 01, 05 and 07 the agent scored full marks through the
+MCP server alone, including getting grants, row-level security, secret handling and
+storage policies right.
 With this model, what holds an unattended agent back on Supabase is not understanding the
 product; it is the two places where the server waits for a person.
 
@@ -65,7 +77,7 @@ Each task then plants its own faults.
 | # | Task | Checks | What it measures about the server |
 |---|---|---|---|
 | 01 | [Ship a comments feature](tasks/01-comments-feature/task.toml) | 10 | New tables need an API grant; migrations leave no file in the repo |
-| 02 | [Reconcile a drifted repo and database](tasks/02-schema-drift/task.toml) | 5 | Whether the migration tools return enough to reconcile the two |
+| 02 | [Reconcile a drifted repo and database](tasks/02-schema-drift/task.toml) | 6 | Whether the migration tools return enough to reconcile the two |
 | 03 | [Find and fix broken sign-ups](tasks/03-signups-broken/task.toml) | 9 | Whether the log tool gets an agent from a symptom to a cause |
 | 04 | [Pre-launch security pass](tasks/04-prelaunch-security/task.toml) | 11 | Advisor coverage, and the false exposure warning |
 | 05 | [Send new orders to a partner webhook](tasks/05-order-webhook/task.toml) | 8 | An unattended agent cannot store a function secret |
@@ -89,7 +101,7 @@ Each check in `task.toml` has:
 - `kind`: **goal** (did the outcome happen), **method** (did it happen the intended way)
   or **hygiene** (nothing unsafe left behind).
 - `grader`: **script** (exact, reads back real state) or **judge** (a model answers one
-  sentence from the transcript). 61 of the 66 checks are scripted.
+  sentence from the transcript). 62 of the 67 checks are scripted.
 - `if_fails`: the change on Supabase's side that a failure points to. This is what makes
   a failed check actionable for the provider.
 
@@ -173,11 +185,17 @@ CLI does not read. The secret key stays with the check scripts.
 
 - **One run per configuration.** Agent runs vary. These results show what can happen,
   not how often. Three or more runs per task are needed before comparing.
-- **Three of the five runs are clean passes.** For this model, tasks 01 and 05 do not
+- **Four of the seven runs are clean passes.** For this model, tasks 01, 05 and 07 do not
   separate good from bad server behaviour; the notes in their reports say what variant
   would. Smaller models are the obvious next thing to run.
-- **Tasks 02, 03, 07 and 08 were not run.** Their state checks are tested, but their
-  repo and transcript checks have not met a real run. Task 02 has no reference solution.
+- **Tasks 03 and 08 were not run.** Their state checks are tested, but their repo and
+  transcript checks have not met a real run.
+- **Two checks changed after a run.** In task 02 the agent ran `psql` against a local
+  test database, which the "stayed in the MCP server" check wrongly counted; it now only
+  counts connections to the hosted project (earlier runs were regraded, none changed).
+  The same run reached its goal by writing to the migration history table directly, so
+  the method check `history-not-hand-edited` was added afterwards. Both are noted in
+  that run's report.
 - **Task 01 does not isolate the grant gap.** The template's baseline migration contains
   `grant` statements, which shows the agent the pattern. A baseline without them would.
 - **The false-warning check was not exercised.** In both task 04 runs the agent did not

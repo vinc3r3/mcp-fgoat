@@ -1,0 +1,91 @@
+[
+  {
+    "id": "bucket-is-private",
+    "kind": "goal",
+    "grader": "script",
+    "text": "A bucket called tracks exists in the hosted project and is not public.",
+    "if_fails": "The default tool list has no storage tools and no hint that buckets are created through SQL; enable the storage group by default and add create_storage_bucket.",
+    "status": "pass",
+    "evidence": "tracks bucket is private"
+  },
+  {
+    "id": "member-can-upload",
+    "kind": "goal",
+    "grader": "script",
+    "text": "A signed-in member can upload a GPX file into the folder named after their own user id.",
+    "status": "pass",
+    "evidence": "Alice's upload -> 200 {'Key': 'tracks/5aa41bf4-a0f7-47c5-8956-d545ff93c808/check-track.gpx', 'Id': 'e79f7656-fa51-4a06-bf0"
+  },
+  {
+    "id": "other-member-can-download",
+    "kind": "goal",
+    "grader": "script",
+    "text": "A different signed-in member can download that file.",
+    "status": "pass",
+    "evidence": "Bob's download -> 200"
+  },
+  {
+    "id": "visitor-cannot-download",
+    "kind": "goal",
+    "grader": "script",
+    "text": "A visitor who is not signed in cannot download that file.",
+    "status": "pass",
+    "evidence": "visitor download attempts -> {'public': 400, 'authenticated': 400}"
+  },
+  {
+    "id": "cannot-upload-into-another-folder",
+    "kind": "goal",
+    "grader": "script",
+    "text": "A signed-in member cannot upload a file into another member's folder.",
+    "status": "pass",
+    "evidence": "Bob's upload into Alice's folder -> 400; file stored: False"
+  },
+  {
+    "id": "only-uploader-can-delete",
+    "kind": "goal",
+    "grader": "script",
+    "text": "A different member cannot delete the file, and the uploader can.",
+    "status": "pass",
+    "evidence": "after Bob's delete the file survived; after Alice's delete it is gone"
+  },
+  {
+    "id": "size-limit-enforced",
+    "kind": "goal",
+    "grader": "script",
+    "text": "A 6 MB upload is rejected.",
+    "status": "pass",
+    "evidence": "6 MB upload -> 400; file stored: False"
+  },
+  {
+    "id": "type-limit-enforced",
+    "kind": "goal",
+    "grader": "script",
+    "text": "A PNG upload is rejected.",
+    "status": "pass",
+    "evidence": "PNG upload -> 400; file stored: False"
+  },
+  {
+    "id": "setup-in-repo",
+    "kind": "method",
+    "grader": "script",
+    "text": "The repo's supabase/migrations folder contains a new file that creates the tracks bucket.",
+    "status": "pass",
+    "evidence": "new migration files mentioning 'tracks': ['20261119111111_tracks_storage.sql']"
+  },
+  {
+    "id": "app-builds",
+    "kind": "hygiene",
+    "grader": "script",
+    "text": "`npm run build` succeeds in the agent's working directory.",
+    "status": "pass",
+    "evidence": "npm run build succeeded"
+  },
+  {
+    "id": "stayed-in-mcp",
+    "kind": "method",
+    "grader": "script",
+    "text": "Changes to the Supabase project went through the MCP server: no Supabase CLI, management API or direct Postgres connection.",
+    "status": "pass",
+    "evidence": "6 MCP calls, no CLI, management API or direct database access"
+  }
+]

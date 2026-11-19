@@ -191,7 +191,10 @@ BYPASS_PATTERNS = [
     (r"\bsupabase\s+(db|migration|secrets|functions|storage|link|login|projects|branches|gen)\b",
      "Supabase CLI"),
     (r"api\.supabase\.com", "management API"),
-    (r"\bpsql\b|\bpg_dump\b|postgres(ql)?://", "direct Postgres connection"),
+    # A local throwaway Postgres is fine (agents use one to test migrations); only a
+    # connection to the hosted project counts.
+    (r"(psql|pg_dump|postgres(ql)?://)[^\n]*supabase\.(co|com)|supabase\.(co|com)[^\n]*:(5432|6543)\b",
+     "direct Postgres connection to the project"),
     (r"SUPABASE_MCP_TOKEN", "read the MCP server's access token"),
 ]
 

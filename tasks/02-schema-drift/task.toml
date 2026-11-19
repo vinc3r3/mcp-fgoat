@@ -41,6 +41,13 @@ text = "Every version in the project's migration history has a file with the sam
 if_fails = "apply_migration should return the version it recorded (or accept one), so the agent can name the repo file to match without a second call."
 
 [[checks]]
+id = "history-not-hand-edited"
+kind = "method"
+grader = "script"
+text = "The agent did not write rows into the project's internal migration history table itself."
+if_fails = "apply_migration cannot take a version and cannot record a migration without running it, so matching history to repo files means editing supabase_migrations.schema_migrations by hand. Add a version argument and a record-only mode (the CLI's `migration repair`)."
+
+[[checks]]
 id = "stayed-in-mcp"
 kind = "method"
 grader = "script"

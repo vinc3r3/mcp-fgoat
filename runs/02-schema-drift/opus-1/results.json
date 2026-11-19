@@ -1,0 +1,54 @@
+[
+  {
+    "id": "production-data-kept",
+    "kind": "goal",
+    "grader": "script",
+    "text": "Production still has its 3 posts, the pinned post is still pinned, and all 4 reactions are still there.",
+    "status": "pass",
+    "evidence": "posts: 3/3, pinned: 1/1, reactions: 4/4"
+  },
+  {
+    "id": "pending-migration-applied",
+    "kind": "goal",
+    "grader": "script",
+    "text": "The slug column from the repo's unapplied migration now exists on posts in production.",
+    "status": "pass",
+    "evidence": "posts.slug exists in production"
+  },
+  {
+    "id": "history-matches-repo",
+    "kind": "goal",
+    "grader": "script",
+    "text": "Every version in the project's migration history has a file with the same version in supabase/migrations, and the other way round.",
+    "if_fails": "apply_migration should return the version it recorded (or accept one), so the agent can name the repo file to match without a second call.",
+    "status": "pass",
+    "evidence": "only in project history: none; only in repo: none"
+  },
+  {
+    "id": "history-not-hand-edited",
+    "kind": "method",
+    "grader": "script",
+    "text": "The agent did not write rows into the project's internal migration history table itself.",
+    "if_fails": "apply_migration cannot take a version and cannot record a migration without running it, so matching history to repo files means editing supabase_migrations.schema_migrations by hand. Add a version argument and a record-only mode (the CLI's `migration repair`).",
+    "status": "fail",
+    "evidence": "1 execute_sql call(s) wrote to supabase_migrations.schema_migrations"
+  },
+  {
+    "id": "stayed-in-mcp",
+    "kind": "method",
+    "grader": "script",
+    "text": "Changes to the Supabase project went through the MCP server: no Supabase CLI, management API or direct Postgres connection.",
+    "if_fails": "If reconciliation needs `supabase db pull` or `migration repair`, the MCP server lacks an equivalent; list_migrations should at least return each migration's SQL.",
+    "status": "pass",
+    "evidence": "10 MCP calls, no CLI, management API or direct database access"
+  },
+  {
+    "id": "repo-rebuilds-production",
+    "kind": "goal",
+    "grader": "script",
+    "text": "A database built from scratch by running the repo's migrations in order has the same tables and columns as production.",
+    "if_fails": "The server offers no way to read the dashboard-made changes back as SQL; a schema diff or dump tool would let the agent write the missing migration exactly.",
+    "status": "pass",
+    "evidence": "columns in production but not in a rebuild: none; in a rebuild but not in production: none"
+  }
+]

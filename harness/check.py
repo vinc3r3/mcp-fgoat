@@ -97,8 +97,12 @@ def main():
 
     passed = sum(r["status"] == "pass" for r in results)
     print(f"\n{passed}/{len(results)} checks passed")
-    if not only:
-        (run_dir / "results.json").write_text(json.dumps(results, indent=2))
+    path = run_dir / "results.json"
+    if only and path.exists():  # regrading some checks: merge into the saved results
+        fresh = {r["id"]: r for r in results}
+        results = [fresh.get(r["id"], r) for r in json.loads(path.read_text())]
+    if not only or path.exists():
+        path.write_text(json.dumps(results, indent=2))
 
 
 if __name__ == "__main__":
