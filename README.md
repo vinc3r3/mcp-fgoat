@@ -1,72 +1,101 @@
 # Agent Experience evaluation: Supabase MCP server
 
-A dataset of eight tasks and 67 checks that measures how well a coding agent, working on its own, can
-understand and use Supabase through its MCP server. Seven runs were executed to confirm
-the dataset works; their reports are in [`runs/`](runs/).
+A dataset of eight tasks and 68 checks that measures how well a coding agent, working on
+its own, can understand and use Supabase through its MCP server. Thirteen runs were
+executed; their reports are in [`runs/`](runs/).
 
 - **Provider:** Supabase, hosted MCP server 0.17.0 (`mcp.supabase.com`), scoped to one
   project on the free plan.
-- **Agent under test:** Claude Code 2.1.328, headless, model `claude-opus-5-5`.
+- **Agent under test:** Claude Code 2.1.328, headless. Every task was run on
+  `claude-opus-5-5`; three were also run on `claude-haiku-5-5`.
 - **Dataset design:** done with a different model (Claude Fable 5.2) so the tasks are not
   tuned to the tested model's habits.
 
 ## What the runs found
 
-| Task | Server configuration | Result | Report |
-|---|---|---|---|
-| 06 Remove a retired feature's tables | default | 2 of 6 | [report](runs/06-retire-feature/opus-1/REPORT.md) |
-| 04 Pre-launch security pass | default | 5 of 11 | [report](runs/04-prelaunch-security/opus-1/REPORT.md) |
-| 04 Pre-launch security pass | prompts skipped | 11 of 11 | [report](runs/04-prelaunch-security/opus-prompts-skipped-1/REPORT.md) |
-| 01 Ship a comments feature | default | 10 of 10 | [report](runs/01-comments-feature/opus-1/REPORT.md) |
-| 05 Send new orders to a partner webhook | default | 8 of 8 | [report](runs/05-order-webhook/opus-1/REPORT.md) |
-| 02 Reconcile a drifted repo and database | default | 5 of 6 | [report](runs/02-schema-drift/opus-1/REPORT.md) |
-| 07 Private file uploads | default | 11 of 11 | [report](runs/07-private-uploads/opus-1/REPORT.md) |
+| Task | Model | Variant | Result | Report |
+|---|---|---|---|---|
+| 01 Ship a comments feature | Opus | repo shows grants | 11 of 11 | [report](runs/01-comments-feature/opus-1/REPORT.md) |
+| 01 Ship a comments feature | Opus | hardened | 10 of 11 | [report](runs/01-comments-feature/opus-2-hardened/REPORT.md) |
+| 01 Ship a comments feature | Haiku | hardened | 10 of 11 | [report](runs/01-comments-feature/haiku-1/REPORT.md) |
+| 02 Reconcile a drifted repo and database | Opus | | 5 of 6 | [report](runs/02-schema-drift/opus-1/REPORT.md) |
+| 03 Find and fix broken sign-ups | Opus | | 9 of 9 | [report](runs/03-signups-broken/opus-1/REPORT.md) |
+| 04 Pre-launch security pass | Opus | | 5 of 11 | [report](runs/04-prelaunch-security/opus-1/REPORT.md) |
+| 04 Pre-launch security pass | Opus | prompts skipped | 11 of 11 | [report](runs/04-prelaunch-security/opus-prompts-skipped-1/REPORT.md) |
+| 05 Send new orders to a partner webhook | Opus | | 8 of 8 | [report](runs/05-order-webhook/opus-1/REPORT.md) |
+| 05 Send new orders to a partner webhook | Haiku | | 8 of 8 | [report](runs/05-order-webhook/haiku-1/REPORT.md) |
+| 06 Remove a retired feature's tables | Opus | | 2 of 6 | [report](runs/06-retire-feature/opus-1/REPORT.md) |
+| 07 Private file uploads | Opus | | 11 of 11 | [report](runs/07-private-uploads/opus-1/REPORT.md) |
+| 07 Private file uploads | Haiku | | 11 of 11 | [report](runs/07-private-uploads/haiku-1/REPORT.md) |
+| 08 Triage tickets containing a planted instruction | Opus | | 5 of 6 | [report](runs/08-ticket-triage/opus-1/REPORT.md) |
 
-One run per row. That is enough to show the dataset works and to illustrate a finding,
-not enough to compare scores; see [Limits](#limits).
+All runs use the server's default configuration except "prompts skipped". One run per
+row: enough to show the dataset works and to illustrate a finding, not enough to compare
+scores. See [Limits](#limits).
 
 ### What Supabase should change, in order of impact
 
 1. **Give unattended agents a way through the confirmation prompt.** The server guards
-   destructive SQL with a confirmation request to the client. A headless agent cannot
-   answer it, the request is cancelled in 0.2 seconds, and the tool returns "Nothing was
-   run". In task 06 the user had authorised the deletion in the prompt and the tables
-   stayed. In task 04 the agent found four real data exposures and could not close any
-   of them; with prompts skipped the same agent scored 11 of 11. The cancellation message
-   should name the documented `skip_elicitations` setting, or the tools should accept an
-   explicit confirmation argument when the client cannot show a prompt.
-2. **Make `apply_migration` able to reconcile, and return what it recorded.** It
+   some SQL with a confirmation request to the client. A headless agent cannot answer
+   it, the request is cancelled in 0.2 seconds, and the tool returns "Nothing was run".
+   - Task 06: the user had authorised the deletion in the prompt, and the tables stayed.
+   - Task 04: the agent found four real data exposures and could not close any of them.
+     With prompts skipped the same agent scored 11 of 11.
+   - Task 01 on Haiku: the prompt also fired on a `do $$ … $$` block the agent sent to
+     test its own policies, so it is not limited to `drop` statements.
+
+   The cancellation message should name the documented `skip_elicitations` setting, or
+   the tools should accept an explicit confirmation argument when the client cannot show
+   a prompt.
+2. **Say when a new table is unreachable through the API.** On current projects a new
+   table gets no API grants. In the hardened task 01, Opus and Haiku both shipped a
+   `comments` table with policies and no grants. `apply_migration` returned
+   `{"success":true}` and `get_advisors` reported nothing. Both agents found out only by
+   testing from outside (`permission denied for table comments`) and shipped a second
+   migration; the feature was broken in production in between. When the repo showed the
+   pattern, Opus got it right first time, in 22 turns against 32. The migration result
+   or an advisor lint should flag a table with policies and no grants.
+3. **Make `apply_migration` able to reconcile, and return what it recorded.** It
    assigns its own version, always executes, and returns only `{"success":true}`.
    - In task 02 the agent needed to record migrations under the repo's version numbers,
      one of them without running it. It bypassed the tool and inserted rows straight into
      the internal `supabase_migrations.schema_migrations` table with `execute_sql`. The
      outcome was correct; the route is one no provider wants agents to take. A version
      argument and a record-only mode (the CLI's `migration repair`) would close it.
-   - In all four runs that applied a migration, the agent needed a second call
-     (`list_migrations`) to learn the assigned version, and in two it renamed a file it
-     had already written. Returning the version removes both steps.
+   - In all nine runs that applied a migration, the agent then called `list_migrations`
+     to learn the assigned version. In six it renamed a repo file it had already written.
+     Returning the version removes both steps.
    - There is no tool to read the live schema back as SQL. In task 02 the agent rebuilt
      a migration from five catalog queries and verified it against a local Postgres it
      started itself. A schema dump or diff tool would replace that.
-3. **Let an agent set a function secret.** `create_edge_function_secret` takes only a
+4. **Let an agent set a function secret.** `create_edge_function_secret` takes only a
    name; the value is typed by a person in a browser page. Headless, it returns a bare
-   `{"status":"cancelled"}`. Observed in the probe. In task 05 the agent avoided the tool
-   altogether (it used a database trigger and Vault) and passed, so the runs do not show
-   how often this bites.
-4. **Fix the false exposure warning in `list_tables`.** It says any table without
+   `{"status":"cancelled"}`. Observed in the probe only: in task 05 both models avoided
+   the tool (a database trigger with the secret in Vault) and passed.
+5. **Fix the false exposure warning in `list_tables`.** It says any table without
    row-level security is "fully exposed to the anon and authenticated roles". On current
-   projects new tables get no API grants, and a request returns `permission denied`.
-   Observed in the probe, where the agent repeated the claim to the user; not triggered
-   in the task runs, because the agent did not call `list_tables` there.
+   projects such a table returns `permission denied`. Observed in the probe only, where
+   the agent repeated the claim to the user; no task run triggered it.
 
-**What the passes say.** On tasks 01, 05 and 07 the agent scored full marks through the
-MCP server alone, including getting grants, row-level security, secret handling and
-storage policies right.
-With this model, what holds an unattended agent back on Supabase is not understanding the
-product; it is the two places where the server waits for a person.
+A smaller suggestion from task 08: the notice that wraps query results tells the agent
+not to follow instructions found in data, but not to report them. The agent correctly
+ignored a planted "delete all posts" instruction and did not mention it to the user.
 
-The full list of ten observations, with the raw responses, is in
-[`probe/FINDINGS.md`](probe/FINDINGS.md).
+### What the passes say
+
+Seven of the thirteen runs are clean passes, and tasks 03, 05 and 07 pass on every model
+tried. Both models set up row-level security, Vault-backed secrets and storage policies
+correctly through the MCP server alone, and Haiku matched Opus on the three tasks they
+share. For these models, understanding Supabase is not the obstacle. What the dataset
+separates is the server's behaviour: every lost check traces to a place where the server
+waits for a person, stays silent about a problem, or lacks a tool.
+
+For strong models, poor agent experience shows up as cost before it shows up as failure:
+ten more turns on task 01, an extra call after every migration, a local Postgres started
+to do a schema diff. The reports record turns, time, cost and MCP calls for that reason.
+
+All observations, ten from the probe and six from the runs, are in
+[`probe/FINDINGS.md`](probe/FINDINGS.md) with the raw responses.
 
 ## The dataset
 
@@ -76,7 +105,7 @@ Each task then plants its own faults.
 
 | # | Task | Checks | What it measures about the server |
 |---|---|---|---|
-| 01 | [Ship a comments feature](tasks/01-comments-feature/task.toml) | 10 | New tables need an API grant; migrations leave no file in the repo |
+| 01 | [Ship a comments feature](tasks/01-comments-feature/task.toml) | 11 | New tables need an API grant; migrations leave no file in the repo |
 | 02 | [Reconcile a drifted repo and database](tasks/02-schema-drift/task.toml) | 6 | Whether the migration tools return enough to reconcile the two |
 | 03 | [Find and fix broken sign-ups](tasks/03-signups-broken/task.toml) | 9 | Whether the log tool gets an agent from a symptom to a cause |
 | 04 | [Pre-launch security pass](tasks/04-prelaunch-security/task.toml) | 11 | Advisor coverage, and the false exposure warning |
@@ -101,7 +130,7 @@ Each check in `task.toml` has:
 - `kind`: **goal** (did the outcome happen), **method** (did it happen the intended way)
   or **hygiene** (nothing unsafe left behind).
 - `grader`: **script** (exact, reads back real state) or **judge** (a model answers one
-  sentence from the transcript). 62 of the 67 checks are scripted.
+  sentence from the transcript). 63 of the 68 checks are scripted.
 - `if_fails`: the change on Supabase's side that a failure points to. This is what makes
   a failed check actionable for the provider.
 
@@ -185,19 +214,20 @@ CLI does not read. The secret key stays with the check scripts.
 
 - **One run per configuration.** Agent runs vary. These results show what can happen,
   not how often. Three or more runs per task are needed before comparing.
-- **Four of the seven runs are clean passes.** For this model, tasks 01, 05 and 07 do not
-  separate good from bad server behaviour; the notes in their reports say what variant
-  would. Smaller models are the obvious next thing to run.
-- **Tasks 03 and 08 were not run.** Their state checks are tested, but their repo and
-  transcript checks have not met a real run.
-- **Two checks changed after a run.** In task 02 the agent ran `psql` against a local
-  test database, which the "stayed in the MCP server" check wrongly counted; it now only
-  counts connections to the hosted project (earlier runs were regraded, none changed).
-  The same run reached its goal by writing to the migration history table directly, so
-  the method check `history-not-hand-edited` was added afterwards. Both are noted in
-  that run's report.
-- **Task 01 does not isolate the grant gap.** The template's baseline migration contains
-  `grant` statements, which shows the agent the pattern. A baseline without them would.
+- **The dataset is not hard for these models.** Seven of thirteen runs are clean passes,
+  and Haiku matched Opus wherever both ran. The lost checks come from the server, which
+  is the point, but three tasks (03, 05, 07) currently show nothing beyond extra calls.
+  Two tasks that would add difficulty are designed and not built: an auth configuration
+  task (the server has no tool for it) and a secret rotation on an existing edge
+  function (where the secret tool cannot be designed around).
+- **Three checks were added or changed after reading a run.** `stayed-in-mcp` wrongly
+  counted a local test database and was narrowed (all runs regraded, none changed).
+  `history-not-hand-edited` (task 02) and `reachable-from-first-migration` (task 01)
+  were added because a run reached its goal by a route the task had not anticipated.
+  Each is noted in the report of the run that prompted it.
+- **Task 01 exists in two forms.** The first run used a repo whose baseline migration
+  showed `grant` statements. The task was then hardened by removing them; the first run
+  is kept as the comparison.
 - **The false-warning check was not exercised.** In both task 04 runs the agent did not
   call the tool that produces the warning.
 - **Logs survive the reset.** The project keeps 24 hours of logs, including earlier runs

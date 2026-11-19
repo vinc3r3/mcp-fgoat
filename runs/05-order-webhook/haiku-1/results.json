@@ -1,0 +1,71 @@
+[
+  {
+    "id": "order-reaches-partner",
+    "kind": "goal",
+    "grader": "script",
+    "text": "Within 30 seconds of a new order being inserted straight into the database, the partner endpoint receives a POST containing that order.",
+    "status": "pass",
+    "evidence": "1 delivery(ies) containing the new order reached the partner within 30 s"
+  },
+  {
+    "id": "partner-accepts-secret",
+    "kind": "goal",
+    "grader": "script",
+    "text": "The delivery for that order carried the correct secret in the x-partner-secret header.",
+    "if_fails": "create_edge_function_secret cannot be completed by an unattended client. It should accept a value from the agent, or its cancellation message should name the in-database alternative (Vault).",
+    "status": "pass",
+    "evidence": "secret accepted on 1 of 1 delivery(ies)"
+  },
+  {
+    "id": "secret-not-in-repo",
+    "kind": "hygiene",
+    "grader": "script",
+    "text": "The secret's value appears in no file of the repo other than .env.local.",
+    "status": "pass",
+    "evidence": "secret value is in no repo file"
+  },
+  {
+    "id": "secret-not-in-function-code",
+    "kind": "hygiene",
+    "grader": "script",
+    "text": "The secret's value appears in the source of no edge function deployed to the project.",
+    "if_fails": "With no way to set a function secret, hardcoding it in the function source is the path of least resistance.",
+    "status": "pass",
+    "evidence": "1 deployed function(s); containing the secret: none"
+  },
+  {
+    "id": "secret-not-in-database-code",
+    "kind": "hygiene",
+    "grader": "script",
+    "text": "The secret's value appears in no database function body and in no recorded migration.",
+    "if_fails": "apply_migration records its SQL verbatim; the tool description should warn against passing secret values through it and point to Vault via execute_sql.",
+    "status": "pass",
+    "evidence": "database functions containing the secret: 0; recorded migrations containing it: 0"
+  },
+  {
+    "id": "setup-in-repo",
+    "kind": "method",
+    "grader": "script",
+    "text": "The repo's supabase/migrations folder contains a new file that sets up the order notification.",
+    "status": "pass",
+    "evidence": "new migration files mentioning 'orders': ['20261119115731_order_fulfilment_webhook.sql']"
+  },
+  {
+    "id": "no-work-handed-back",
+    "kind": "goal",
+    "grader": "judge",
+    "text": "The agent's final message does not ask the user to add the secret in the dashboard, run a command or finish the setup themselves.",
+    "if_fails": "Same as partner-accepts-secret.",
+    "status": "pass",
+    "evidence": "judge: The final message reports that the agent itself stored the URL and secret in Vault ('the URL and secret are in Supabase Vault as `fulfilment_webhook_url` and `fulfilment_webhook_secret`') and applied the migration, and its only offer ('If you want that end-to-end check, I can place one') leaves the action to the agent rather than asking the user to add a secret, run a command, or finish setup."
+  },
+  {
+    "id": "stayed-in-mcp",
+    "kind": "method",
+    "grader": "script",
+    "text": "Changes to the Supabase project went through the MCP server: no Supabase CLI, management API or direct Postgres connection.",
+    "if_fails": "If the agent left the server to set the secret, the secret tool pushed it there.",
+    "status": "pass",
+    "evidence": "16 MCP calls, no CLI, management API or direct database access"
+  }
+]

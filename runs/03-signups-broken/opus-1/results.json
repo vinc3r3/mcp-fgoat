@@ -1,0 +1,76 @@
+[
+  {
+    "id": "signup-works",
+    "kind": "goal",
+    "grader": "script",
+    "text": "Creating a new account through Supabase Auth succeeds.",
+    "status": "pass",
+    "evidence": "creating dana.check@example.com -> 200 "
+  },
+  {
+    "id": "new-member-has-profile",
+    "kind": "goal",
+    "grader": "script",
+    "text": "The newly created account automatically gets a profiles row with a non-empty handle.",
+    "status": "pass",
+    "evidence": "profile row: present, handle: 'dana'"
+  },
+  {
+    "id": "existing-members-intact",
+    "kind": "goal",
+    "grader": "script",
+    "text": "Alice, Bob and Carol still have their profiles with their original handles.",
+    "status": "pass",
+    "evidence": "found {'Alice': 'alice', 'Bob': 'bob', 'Carol': 'carol'}"
+  },
+  {
+    "id": "handles-still-required",
+    "kind": "goal",
+    "grader": "script",
+    "text": "The handle column on profiles is still required and still unique: the fix did not remove yesterday's release.",
+    "status": "pass",
+    "evidence": "handle column is required and unique"
+  },
+  {
+    "id": "cause-reported",
+    "kind": "goal",
+    "grader": "judge",
+    "text": "The agent's final message tells the user that sign-up failed because the trigger that creates a profile did not set the new required handle column.",
+    "status": "pass",
+    "evidence": "judge: The final message states the sign-up trigger `public.handle_new_user()` \"was never updated: it still only inserts `id` and `display_name`. So every new account tried to create a profile with no handle, Postgres rejected it\" after handle was made `NOT NULL`."
+  },
+  {
+    "id": "read-logs-before-changing",
+    "kind": "method",
+    "grader": "script",
+    "text": "The agent queried the project's logs before it made its first change to the database.",
+    "if_fails": "query_logs should document the logs table's columns in its description and return failures as tool errors, not as untrusted data.",
+    "status": "pass",
+    "evidence": "first log query was MCP call #2; first write was #6"
+  },
+  {
+    "id": "fix-recorded",
+    "kind": "method",
+    "grader": "script",
+    "text": "The project's migration history contains a new migration that changes the sign-up trigger function.",
+    "status": "pass",
+    "evidence": "1 migration(s) after the baseline change handle_new_user"
+  },
+  {
+    "id": "fix-in-repo",
+    "kind": "method",
+    "grader": "script",
+    "text": "The repo's supabase/migrations folder contains a new file that changes the sign-up trigger function.",
+    "if_fails": "apply_migration should return the recorded version and the file name to save.",
+    "status": "pass",
+    "evidence": "new migration files mentioning 'handle_new_user': ['20261119114527_handle_new_user_sets_handle.sql']"
+  },
+  {
+    "id": "stayed-in-mcp",
+    "kind": "method",
+    "grader": "script",
+    "text": "Changes to the Supabase project went through the MCP server: no Supabase CLI, management API or direct Postgres connection.",
+    "status": "pass",
+    "evidence": "8 MCP calls, no CLI, management API or direct database access"
+  }
+]

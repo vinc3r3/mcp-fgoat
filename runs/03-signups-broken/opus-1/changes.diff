@@ -1,0 +1,56 @@
+diff --git a/supabase/migrations/20261119114527_handle_new_user_sets_handle.sql b/supabase/migrations/20261119114527_handle_new_user_sets_handle.sql
+new file mode 100644
+index 0000000..6cda88c
+--- /dev/null
++++ b/supabase/migrations/20261119114527_handle_new_user_sets_handle.sql
+@@ -0,0 +1,50 @@
++-- Fix signups (broken since 20261118000000_add_profile_handles):
++-- profiles.handle became NOT NULL + unique, but handle_new_user() still only
++-- inserted (id, display_name), so every new auth.users insert failed with a
++-- not-null violation and Supabase Auth returned 500.
++--
++-- The trigger now sets a handle: the signup metadata 'handle' if given,
++-- otherwise lower(display_name) (same rule as the backfill). On a clash with
++-- profiles_handle_key it appends -2, -3, ... until the insert succeeds.
++create or replace function public.handle_new_user()
++returns trigger
++language plpgsql
++security definer
++set search_path = ''
++as $$
++declare
++  v_display_name text;
++  v_base text;
++  v_handle text;
++  v_n int := 1;
++begin
++  v_display_name := coalesce(
++    nullif(trim(new.raw_user_meta_data ->> 'display_name'), ''),
++    split_part(new.email, '@', 1)
++  );
++  v_base := lower(coalesce(
++    nullif(trim(new.raw_user_meta_data ->> 'handle'), ''),
++    nullif(v_display_name, ''),
++    'user'
++  ));
++  v_handle := v_base;
++
++  loop
++    begin
++      insert into public.profiles (id, display_name, handle)
++      values (new.id, v_display_name, v_handle);
++      exit;
++    exception when unique_violation then
++      -- Only retry for handle clashes; anything else (e.g. duplicate id) is real.
++      if position('profiles_handle_key' in sqlerrm) = 0 then
++        raise;
++      end if;
++      v_n := v_n + 1;
++      v_handle := v_base || '-' || v_n;
++    end;
++  end loop;
++
++  return new;
++end;
++$$;
++revoke execute on function public.handle_new_user() from public, anon, authenticated;

@@ -1,0 +1,167 @@
+diff --git a/app/page.tsx b/app/page.tsx
+index 53618de..c8fc1ca 100644
+--- a/app/page.tsx
++++ b/app/page.tsx
+@@ -1,5 +1,6 @@
+ import { Suspense } from "react";
+ import { createClient } from "@/lib/supabase/server";
++import TrackUploadForm from "./track-upload-form";
+ 
+ async function Account() {
+   const supabase = await createClient();
+@@ -7,6 +8,19 @@ async function Account() {
+   return data.user ? <p>Signed in as {data.user.email}</p> : <p><a href="/login">Sign in</a></p>;
+ }
+ 
++// Upload field for members only; visitors see nothing here.
++async function TrackUpload() {
++  const supabase = await createClient();
++  const { data } = await supabase.auth.getUser();
++  if (!data.user) return null;
++  return (
++    <section>
++      <h2>Attach a GPX track</h2>
++      <TrackUploadForm />
++    </section>
++  );
++}
++
+ async function Posts() {
+   const supabase = await createClient();
+   const { data: posts, error } = await supabase
+@@ -42,6 +56,9 @@ export default function Home() {
+       <Suspense fallback={null}>
+         <Account />
+       </Suspense>
++      <Suspense fallback={null}>
++        <TrackUpload />
++      </Suspense>
+       <Suspense fallback={<p>Loading posts…</p>}>
+         <Posts />
+       </Suspense>
+diff --git a/app/track-upload-form.tsx b/app/track-upload-form.tsx
+new file mode 100644
+index 0000000..790448a
+--- /dev/null
++++ b/app/track-upload-form.tsx
+@@ -0,0 +1,67 @@
++"use client";
++
++import { useState } from "react";
++import { createClient } from "@/lib/supabase/client";
++
++// Must match the limits in supabase/migrations (tracks bucket).
++const MAX_BYTES = 5 * 1024 * 1024;
++const GPX_TYPE = "application/gpx+xml";
++
++// Keep only characters that are safe in a storage path.
++function safeFileName(name: string) {
++  const cleaned = name.replace(/[^A-Za-z0-9._-]/g, "_").replace(/^\.+/, "");
++  return cleaned || "track.gpx";
++}
++
++export default function TrackUploadForm() {
++  const [status, setStatus] = useState<string | null>(null);
++  const [busy, setBusy] = useState(false);
++
++  async function upload(formData: FormData) {
++    const file = formData.get("track");
++    if (!(file instanceof File) || file.size === 0) {
++      setStatus("Choose a GPX file.");
++      return;
++    }
++    if (!file.name.toLowerCase().endsWith(".gpx")) {
++      setStatus("Only .gpx files can be uploaded.");
++      return;
++    }
++    if (file.size > MAX_BYTES) {
++      setStatus("That file is larger than 5 MB.");
++      return;
++    }
++
++    setBusy(true);
++    setStatus(null);
++    const supabase = createClient();
++    const { data } = await supabase.auth.getUser();
++    if (!data.user) {
++      setBusy(false);
++      setStatus("Sign in to upload a track.");
++      return;
++    }
++
++    // Files go under the member's own folder; re-uploading the same name replaces it.
++    const path = `${data.user.id}/${safeFileName(file.name)}`;
++    const { error } = await supabase.storage
++      .from("tracks")
++      .upload(path, file, { contentType: GPX_TYPE, upsert: true });
++
++    setBusy(false);
++    setStatus(error ? `Upload failed: ${error.message}` : `Uploaded ${file.name}.`);
++  }
++
++  return (
++    <form action={upload} style={{ display: "grid", gap: 12, marginBottom: 24 }}>
++      <label>
++        GPX track (max 5 MB)
++        <input name="track" type="file" accept=".gpx,application/gpx+xml" required />
++      </label>
++      <button type="submit" disabled={busy}>
++        {busy ? "Uploading…" : "Upload track"}
++      </button>
++      {status && <p role="status">{status}</p>}
++    </form>
++  );
++}
+diff --git a/supabase/migrations/20261119115915_track_uploads.sql b/supabase/migrations/20261119115915_track_uploads.sql
+new file mode 100644
+index 0000000..bebe572
+--- /dev/null
++++ b/supabase/migrations/20261119115915_track_uploads.sql
+@@ -0,0 +1,47 @@
++-- GPX track storage for trip reports.
++--
++-- Files live at tracks/<user id>/<file name>.
++-- * The bucket is private: no public URLs, visitors (anon) have no access at all.
++-- * Any signed-in member can download (read) any track.
++-- * A member can upload, replace and delete only inside their own <user id> folder.
++-- * Uploads are capped at 5 MB and must be declared as application/gpx+xml.
++
++insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
++values ('tracks', 'tracks', false, 5 * 1024 * 1024, array['application/gpx+xml'])
++on conflict (id) do update
++  set public = excluded.public,
++      file_size_limit = excluded.file_size_limit,
++      allowed_mime_types = excluded.allowed_mime_types;
++
++-- Signed-in members can download any track.
++create policy "Members read tracks" on storage.objects
++  for select to authenticated
++  using (bucket_id = 'tracks');
++
++-- Members can add files only under their own user id folder.
++create policy "Members upload their own tracks" on storage.objects
++  for insert to authenticated
++  with check (
++    bucket_id = 'tracks'
++    and (storage.foldername(name))[1] = (select auth.uid())::text
++  );
++
++-- Replacing a file (upsert) is an update: only inside their own folder,
++-- and the row may not be moved out of it.
++create policy "Members replace their own tracks" on storage.objects
++  for update to authenticated
++  using (
++    bucket_id = 'tracks'
++    and (storage.foldername(name))[1] = (select auth.uid())::text
++  )
++  with check (
++    bucket_id = 'tracks'
++    and (storage.foldername(name))[1] = (select auth.uid())::text
++  );
++
++create policy "Members delete their own tracks" on storage.objects
++  for delete to authenticated
++  using (
++    bucket_id = 'tracks'
++    and (storage.foldername(name))[1] = (select auth.uid())::text
++  );

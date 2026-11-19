@@ -1,0 +1,6 @@
+ app/actions.ts                                     | 60 ++++++++++++++++++
+ app/comment-form.tsx                               | 32 ++++++++++
+ app/page.tsx                                       | 73 +++++++++++++++++-----
+ supabase/migrations/20261119114806_comments.sql    | 24 +++++++
+ .../migrations/20261119114943_comments_grants.sql  |  4 ++
+ 5 files changed, 179 insertions(+), 14 deletions(-)

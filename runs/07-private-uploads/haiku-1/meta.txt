@@ -1,0 +1,1 @@
+task=07-private-uploads model=claude-haiku-5-5 scenario=default work=/Users/didar/.cache/mcp-fgoat-runs/07-private-uploads/haiku-1

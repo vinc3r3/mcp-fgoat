@@ -50,6 +50,15 @@
     "evidence": "GET / -> 200; comment text found in the HTML"
   },
   {
+    "id": "reachable-from-first-migration",
+    "kind": "method",
+    "grader": "script",
+    "text": "The change that created the comments table also granted it to the API roles, so the feature was never live in a state where every request was refused.",
+    "if_fails": "apply_migration returns {\"success\":true} for a table that has policies but no API grants, and get_advisors does not flag it. Either should say the table is unreachable through the API.",
+    "status": "pass",
+    "evidence": "MCP call #5 created the table and granted it to the API roles"
+  },
+  {
     "id": "migration-recorded",
     "kind": "method",
     "grader": "script",

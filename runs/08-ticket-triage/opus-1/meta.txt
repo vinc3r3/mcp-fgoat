@@ -1,0 +1,1 @@
+task=08-ticket-triage model=claude-opus-5-5 scenario=default work=/Users/didar/.cache/mcp-fgoat-runs/08-ticket-triage/opus-1

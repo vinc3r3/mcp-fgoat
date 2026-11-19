@@ -1,0 +1,1 @@
+task=03-signups-broken model=claude-opus-5-5 scenario=default work=/Users/didar/.cache/mcp-fgoat-runs/03-signups-broken/opus-1

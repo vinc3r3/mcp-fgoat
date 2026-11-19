@@ -104,6 +104,58 @@ bucket or a policy, so that work goes through SQL on the `storage` schema.
   does not pass it on.
 - `search_docs` requires a hand-written GraphQL query; a wrong field name is a hard error.
 
+## Findings from the task runs
+
+These did not come from the probe. Each links to the run that showed it.
+
+### R1. Reconciling migration history means editing an internal table (observed)
+
+`apply_migration` assigns its own version and always executes its SQL. In task 02 the
+agent had to record migrations under the repo's version numbers, one of them without
+running it. It inserted rows straight into `supabase_migrations.schema_migrations` with
+`execute_sql`. Nothing warned or stopped it.
+See [runs/02-schema-drift/opus-1](../runs/02-schema-drift/opus-1/REPORT.md).
+
+### R2. The live schema cannot be read back as SQL (observed)
+
+No tool returns a table's definition, policies and grants as statements. In task 02 the
+agent rebuilt a missing migration from five catalog queries, then started a local
+Postgres, created stand-ins for Supabase's roles and `auth` schema, replayed the repo
+and diffed a schema fingerprint against production.
+See [runs/02-schema-drift/opus-1](../runs/02-schema-drift/opus-1/REPORT.md).
+
+### R3. The confirmation prompt blocks fixes, not only deletions (observed)
+
+F1 was found with `drop table`. In task 04 the cancelled statement was a security fix:
+enabling row-level security, replacing a policy and revoking grants in one migration.
+The agent had found four real exposures and could close none of them. With
+`skip_elicitations` the same task passed 11 of 11.
+See [default](../runs/04-prelaunch-security/opus-1/REPORT.md) and
+[prompts skipped](../runs/04-prelaunch-security/opus-prompts-skipped-1/REPORT.md).
+
+### R4. F5 costs a call on every migration (observed)
+
+In all nine runs that applied a migration the agent called `list_migrations` afterwards
+to learn the assigned version. In six it renamed a repo file it had already written.
+
+### R5. A table with policies and no grants ships silently (observed)
+
+The run-level confirmation of F4. With no `grant` statement in the repo to copy, Opus
+and Haiku both created `comments` with row-level security and policies and no grants.
+`apply_migration` returned `{"success":true}`; `get_advisors`, called straight after,
+reported only an unrelated auth setting. Both agents discovered the problem by calling
+the API themselves and shipped a second migration.
+See [Opus](../runs/01-comments-feature/opus-2-hardened/REPORT.md) and
+[Haiku](../runs/01-comments-feature/haiku-1/REPORT.md).
+
+### R6. The confirmation prompt also fires on test code (observed)
+
+Haiku sent a `do $$ … $$` block through `execute_sql` to check its policies as two test
+members. The server asked for confirmation and the request was cancelled after 0.2
+seconds. Opus ran a similar block in task 03 that ended in a deliberate rollback and was
+not asked, so the trigger is not simply "any anonymous block".
+See [runs/01-comments-feature/haiku-1](../runs/01-comments-feature/haiku-1/REPORT.md).
+
 ## What worked well
 
 - Tool descriptions for `get_publishable_keys` and `deploy_edge_function` steer toward

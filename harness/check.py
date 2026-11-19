@@ -99,8 +99,9 @@ def main():
     print(f"\n{passed}/{len(results)} checks passed")
     path = run_dir / "results.json"
     if only and path.exists():  # regrading some checks: merge into the saved results
-        fresh = {r["id"]: r for r in results}
-        results = [fresh.get(r["id"], r) for r in json.loads(path.read_text())]
+        merged = {r["id"]: r for r in json.loads(path.read_text())}
+        merged.update({r["id"]: r for r in results})
+        results = [merged[c["id"]] for c in task["checks"] if c["id"] in merged]
     if not only or path.exists():
         path.write_text(json.dumps(results, indent=2))
 

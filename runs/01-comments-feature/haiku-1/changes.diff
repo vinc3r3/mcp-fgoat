@@ -1,0 +1,273 @@
+diff --git a/app/comments/actions.ts b/app/comments/actions.ts
+new file mode 100644
+index 0000000..5032923
+--- /dev/null
++++ b/app/comments/actions.ts
+@@ -0,0 +1,51 @@
++"use server";
++
++import { revalidatePath } from "next/cache";
++import { createClient } from "@/lib/supabase/server";
++
++export type CommentState = { error: string | null };
++
++const MAX_LENGTH = 2000;
++
++// Server Actions are reachable by direct POST, so each one checks the session
++// itself. The database policies on `comments` are the backstop.
++export async function addComment(_prev: CommentState, formData: FormData): Promise<CommentState> {
++  const postId = Number(formData.get("post_id"));
++  const body = String(formData.get("body") ?? "").trim();
++
++  if (!Number.isInteger(postId) || postId <= 0) return { error: "Unknown post." };
++  if (body.length === 0) return { error: "Write something first." };
++  if ([...body].length > MAX_LENGTH) return { error: `Keep comments under ${MAX_LENGTH} characters.` };
++
++  const supabase = await createClient();
++  const { data: { user } } = await supabase.auth.getUser();
++  if (!user) return { error: "Sign in to comment." };
++
++  const { error } = await supabase
++    .from("comments")
++    .insert({ post_id: postId, author_id: user.id, body });
++  if (error) return { error: error.message };
++
++  revalidatePath("/");
++  return { error: null };
++}
++
++export async function deleteComment(_prev: CommentState, formData: FormData): Promise<CommentState> {
++  const commentId = Number(formData.get("comment_id"));
++  if (!Number.isInteger(commentId) || commentId <= 0) return { error: "Unknown comment." };
++
++  const supabase = await createClient();
++  const { data: { user } } = await supabase.auth.getUser();
++  if (!user) return { error: "Sign in to delete comments." };
++
++  // Only the author may delete; RLS enforces this too.
++  const { error } = await supabase
++    .from("comments")
++    .delete()
++    .eq("id", commentId)
++    .eq("author_id", user.id);
++  if (error) return { error: error.message };
++
++  revalidatePath("/");
++  return { error: null };
++}
+diff --git a/app/comments/comment-form.tsx b/app/comments/comment-form.tsx
+new file mode 100644
+index 0000000..1d2460a
+--- /dev/null
++++ b/app/comments/comment-form.tsx
+@@ -0,0 +1,21 @@
++"use client";
++
++import { useActionState } from "react";
++import { addComment, type CommentState } from "./actions";
++
++const initialState: CommentState = { error: null };
++
++export function CommentForm({ postId }: { postId: number }) {
++  const [state, formAction, pending] = useActionState(addComment, initialState);
++
++  return (
++    <form action={formAction} style={{ display: "grid", gap: 8, marginTop: 12 }}>
++      <input type="hidden" name="post_id" value={postId} />
++      <textarea name="body" rows={3} maxLength={2000} placeholder="Add a comment" required />
++      <div>
++        <button type="submit" disabled={pending}>Comment</button>
++      </div>
++      {state.error && <p role="alert">{state.error}</p>}
++    </form>
++  );
++}
+diff --git a/app/comments/delete-comment-button.tsx b/app/comments/delete-comment-button.tsx
+new file mode 100644
+index 0000000..79644ce
+--- /dev/null
++++ b/app/comments/delete-comment-button.tsx
+@@ -0,0 +1,18 @@
++"use client";
++
++import { useActionState } from "react";
++import { deleteComment, type CommentState } from "./actions";
++
++const initialState: CommentState = { error: null };
++
++export function DeleteCommentButton({ commentId }: { commentId: number }) {
++  const [state, formAction, pending] = useActionState(deleteComment, initialState);
++
++  return (
++    <form action={formAction} style={{ display: "inline" }}>
++      <input type="hidden" name="comment_id" value={commentId} />
++      <button type="submit" disabled={pending}>Delete</button>
++      {state.error && <span role="alert"> {state.error}</span>}
++    </form>
++  );
++}
+diff --git a/app/comments/post-comments.tsx b/app/comments/post-comments.tsx
+new file mode 100644
+index 0000000..26adf6e
+--- /dev/null
++++ b/app/comments/post-comments.tsx
+@@ -0,0 +1,50 @@
++import { CommentForm } from "./comment-form";
++import { DeleteCommentButton } from "./delete-comment-button";
++
++export type CommentView = {
++  id: number;
++  body: string;
++  created_at: string;
++  author_id: string;
++  author_name: string;
++};
++
++export function PostComments({
++  postId,
++  comments,
++  currentUserId,
++}: {
++  postId: number;
++  comments: CommentView[];
++  currentUserId: string | null;
++}) {
++  return (
++    <section style={{ marginTop: 16 }}>
++      <h3 style={{ fontSize: "1rem", margin: "0 0 8px" }}>Comments ({comments.length})</h3>
++      {comments.length === 0 && <p>No comments yet.</p>}
++      <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 12 }}>
++        {comments.map((comment) => (
++          <li key={comment.id}>
++            <div style={{ fontSize: "0.875rem" }}>
++              <strong>{comment.author_name}</strong> ·{" "}
++              {new Date(comment.created_at).toLocaleDateString("en-GB")}
++              {comment.author_id === currentUserId && (
++                <>
++                  {" "}· <DeleteCommentButton commentId={comment.id} />
++                </>
++              )}
++            </div>
++            <p style={{ margin: "4px 0 0" }}>{comment.body}</p>
++          </li>
++        ))}
++      </ul>
++      {currentUserId ? (
++        <CommentForm postId={postId} />
++      ) : (
++        <p>
++          <a href="/login">Sign in</a> to comment.
++        </p>
++      )}
++    </section>
++  );
++}
+diff --git a/app/page.tsx b/app/page.tsx
+index 53618de..a966423 100644
+--- a/app/page.tsx
++++ b/app/page.tsx
+@@ -1,5 +1,6 @@
+ import { Suspense } from "react";
+ import { createClient } from "@/lib/supabase/server";
++import { PostComments, type CommentView } from "./comments/post-comments";
+ 
+ async function Account() {
+   const supabase = await createClient();
+@@ -9,6 +10,8 @@ async function Account() {
+ 
+ async function Posts() {
+   const supabase = await createClient();
++  const { data: { user } } = await supabase.auth.getUser();
++
+   const { data: posts, error } = await supabase
+     .from("posts")
+     .select("id, title, body, created_at, profiles(display_name)")
+@@ -18,6 +21,40 @@ async function Posts() {
+     return <p>Could not load posts: {error.message}</p>;
+   }
+ 
++  // One query for every visible post's comments, grouped by post below.
++  const postIds = posts?.map((post) => post.id) ?? [];
++  const { data: commentRows, error: commentsError } = postIds.length
++    ? await supabase
++        .from("comments")
++        .select("id, post_id, body, created_at, author_id, profiles(display_name)")
++        .in("post_id", postIds)
++        .order("created_at", { ascending: true })
++    : { data: [], error: null };
++
++  if (commentsError) {
++    return <p>Could not load comments: {commentsError.message}</p>;
++  }
++
++  const commentsByPost = new Map<number, CommentView[]>();
++  for (const row of (commentRows ?? []) as unknown as Array<{
++    id: number;
++    post_id: number;
++    body: string;
++    created_at: string;
++    author_id: string;
++    profiles: { display_name: string } | null;
++  }>) {
++    const list = commentsByPost.get(row.post_id) ?? [];
++    list.push({
++      id: row.id,
++      body: row.body,
++      created_at: row.created_at,
++      author_id: row.author_id,
++      author_name: row.profiles?.display_name ?? "Unknown",
++    });
++    commentsByPost.set(row.post_id, list);
++  }
++
+   return (
+     <>
+       {posts?.map((post) => (
+@@ -28,6 +65,11 @@ async function Posts() {
+             {new Date(post.created_at).toLocaleDateString("en-GB")}
+           </small>
+           <p>{post.body}</p>
++          <PostComments
++            postId={post.id}
++            comments={commentsByPost.get(post.id) ?? []}
++            currentUserId={user?.id ?? null}
++          />
+         </article>
+       ))}
+     </>
+diff --git a/supabase/migrations/20261119115226_comments.sql b/supabase/migrations/20261119115226_comments.sql
+new file mode 100644
+index 0000000..4e26452
+--- /dev/null
++++ b/supabase/migrations/20261119115226_comments.sql
+@@ -0,0 +1,19 @@
++-- Comments: short replies from members under a post.
++create table public.comments (
++  id bigint generated always as identity primary key,
++  post_id bigint not null references public.posts (id) on delete cascade,
++  author_id uuid not null references public.profiles (id) on delete cascade,
++  body text not null check (char_length(body) between 1 and 2000),
++  created_at timestamptz not null default now()
++);
++create index comments_post_id_idx on public.comments (post_id);
++create index comments_author_id_idx on public.comments (author_id);
++
++alter table public.comments enable row level security;
++
++create policy "Comments are public" on public.comments
++  for select using (true);
++create policy "Authors insert their own comments" on public.comments
++  for insert to authenticated with check ((select auth.uid()) = author_id);
++create policy "Authors delete their own comments" on public.comments
++  for delete to authenticated using ((select auth.uid()) = author_id);
+diff --git a/supabase/migrations/20261119115359_comments_grants.sql b/supabase/migrations/20261119115359_comments_grants.sql
+new file mode 100644
+index 0000000..9328431
+--- /dev/null
++++ b/supabase/migrations/20261119115359_comments_grants.sql
+@@ -0,0 +1,5 @@
++-- Table privileges for the comments table. RLS policies still decide which rows
++-- each role may touch; these grants only let the roles reach the table at all.
++grant select on public.comments to anon, authenticated;
++grant insert, delete on public.comments to authenticated;
++grant usage on sequence public.comments_id_seq to authenticated;

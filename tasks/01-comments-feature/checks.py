@@ -1,4 +1,6 @@
 """Checks for 01-comments-feature. Each function returns (passed, evidence)."""
+import re
+
 from checklib import (Fail, app_builds, migration_in_repo as _in_repo,  # noqa: F401
                       migration_recorded as _recorded, rest, rows, scalar, sign_in, sql,
                       stayed_in_mcp)
@@ -120,6 +122,16 @@ def comments_on_home_page(ctx):
     status, html = ctx.fetch_page("/")
     return status == 200 and f"{MARKER}-page" in str(html), (
         f"GET / -> {status}; comment text {'found' if f'{MARKER}-page' in str(html) else 'not found'} in the HTML")
+
+
+def reachable_from_first_migration(ctx):
+    for n, (tool, args) in enumerate(ctx.supabase_calls(), start=1):
+        query = args.get("query", "")
+        if tool in ("apply_migration", "execute_sql") and re.search(r"create\s+table[^;(]*comments", query, re.I):
+            granted = bool(re.search(r"grant\s[^;]*\bcomments\b", query, re.I))
+            return granted, (f"MCP call #{n} created the table "
+                             f"{'and granted it to the API roles' if granted else 'with no grant: the API refused every request until a later fix'}")
+    return False, "no MCP call created the comments table"
 
 
 def migration_recorded(ctx):

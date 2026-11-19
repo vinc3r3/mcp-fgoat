@@ -1,0 +1,1 @@
+task=01-comments-feature model=claude-opus-5-5 scenario=default work=/Users/didar/.cache/mcp-fgoat-runs/01-comments-feature/opus-2-hardened

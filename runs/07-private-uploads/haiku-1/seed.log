@@ -1,0 +1,3 @@
+applied migration 20261101000000_init.sql
+created members and posts
+state: [{'profiles': 3, 'posts': 3, 'migrations': 1}]

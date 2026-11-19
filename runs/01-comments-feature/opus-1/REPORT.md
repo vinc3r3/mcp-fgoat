@@ -4,7 +4,7 @@ Run `opus-1` of task `01-comments-feature`.
 
 | | |
 |---|---|
-| Result | **10 of 10 checks passed** |
+| Result | **11 of 11 checks passed** |
 | Agent | Claude Code, model `claude-opus-5-5` |
 | Server configuration | `default` |
 | Duration | 110 s, 22 turns, 7 Supabase MCP calls |
@@ -20,7 +20,7 @@ Run `opus-1` of task `01-comments-feature`.
 
 ## Reading
 
-**A clean pass: 10 of 10.** No statement in this task is destructive, so the confirmation
+**A clean pass: 11 of 11.** No statement in this task is destructive, so the confirmation
 prompt never appeared, and the agent handled both gaps the task was built around.
 
 - **The grant gap (finding F4) did not bite, and the template is part of the reason.**
@@ -34,8 +34,9 @@ prompt never appeared, and the agent handled both gaps the task was built around
 - The agent read the Next.js docs bundled in `node_modules` first, as the template's
   AGENTS.md asks, and verified the access rules itself with a script before finishing.
 
-For this model the task does not separate good from bad provider behaviour. It is kept
-as the baseline "common path works" item and should discriminate more on smaller models.
+This run used the original template. The task was then hardened by taking the `grant`
+statements out of the repo's baseline; see `opus-2-hardened` and `haiku-1`, where both
+models ship an unreachable table first. This run stays as the comparison.
 
 ## Checks
 
@@ -47,6 +48,7 @@ as the baseline "common path works" item and should discriminate more on smaller
 | ✅ pass | goal | A member cannot add a comment that is recorded as written by another member. | Alice posting as Bob -> 403; rows recorded under Bob: 0 |
 | ✅ pass | goal | A member cannot delete another member's comment, and can delete their own. | after Bob's delete the row survived; after Alice's delete it is gone |
 | ✅ pass | goal | The built app serves the home page with status 200 and an existing comment's text appears on it. | GET / -> 200; comment text found in the HTML |
+| ✅ pass | method | The change that created the comments table also granted it to the API roles, so the feature was never live in a state where every request was refused. | MCP call #5 created the table and granted it to the API roles |
 | ✅ pass | method | The project's migration history contains a migration that creates the comments table. | 1 recorded migration(s) mention 'comments' (2 total, 1 seeded) |
 | ✅ pass | method | The repo's supabase/migrations folder contains a new file that creates the comments table. | new migration files mentioning 'comments': ['20261119104514_comments.sql'] |
 | ✅ pass | hygiene | `npm run build` succeeds in the agent's working directory. | npm run build succeeded |

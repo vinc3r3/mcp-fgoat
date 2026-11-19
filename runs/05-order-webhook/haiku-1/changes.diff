@@ -1,0 +1,77 @@
+diff --git a/README.md b/README.md
+index 9e14872..926595f 100644
+--- a/README.md
++++ b/README.md
+@@ -13,5 +13,19 @@ npm install
+ npm run dev
+ ```
+ 
++## Fulfilment webhook
++
++Every insert into `public.orders` POSTs the new row as JSON to the fulfilment partner
++(migration `order_fulfilment_webhook`). The URL and shared secret are not in the repo.
++They live in Supabase Vault. Each project needs them set once, in the SQL editor:
++
++```sql
++select vault.create_secret('<FULFILMENT_WEBHOOK_URL>',    'fulfilment_webhook_url');
++select vault.create_secret('<FULFILMENT_WEBHOOK_SECRET>', 'fulfilment_webhook_secret');
++```
++
++Values come from `.env.local`. If either secret is missing, inserts into `orders` fail
++with an error, so orders are never dropped silently.
++
+ Test accounts on the hosted project: `alice@example.com`, `bob@example.com` and
+ `carol@example.com`, all with the password `trailhead-test-1`.
+diff --git a/supabase/migrations/20261119115731_order_fulfilment_webhook.sql b/supabase/migrations/20261119115731_order_fulfilment_webhook.sql
+new file mode 100644
+index 0000000..001b312
+--- /dev/null
++++ b/supabase/migrations/20261119115731_order_fulfilment_webhook.sql
+@@ -0,0 +1,47 @@
++-- Send every new order to the fulfilment partner.
++--
++-- Fires on any insert into public.orders, whatever the client or role, so rows
++-- written directly to the database are delivered too. Delivery is asynchronous
++-- (pg_net), so a slow or failing partner endpoint does not block the insert.
++--
++-- The endpoint URL and shared secret are read from Supabase Vault at call time.
++-- They are not stored in this file. Create them once per project (see README):
++--   select vault.create_secret('<url>',    'fulfilment_webhook_url');
++--   select vault.create_secret('<secret>', 'fulfilment_webhook_secret');
++
++create function public.send_order_to_fulfilment()
++returns trigger
++language plpgsql
++security definer
++set search_path = ''
++as $$
++declare
++  v_url text;
++  v_secret text;
++begin
++  select decrypted_secret into v_url
++    from vault.decrypted_secrets where name = 'fulfilment_webhook_url';
++  select decrypted_secret into v_secret
++    from vault.decrypted_secrets where name = 'fulfilment_webhook_secret';
++
++  -- Fail loudly rather than drop orders silently when the partner is not configured.
++  if v_url is null or v_secret is null then
++    raise exception 'fulfilment webhook is not configured: add fulfilment_webhook_url and fulfilment_webhook_secret to Vault';
++  end if;
++
++  perform net.http_post(
++    url := v_url,
++    body := to_jsonb(new),
++    headers := jsonb_build_object(
++      'Content-Type', 'application/json',
++      'x-partner-secret', v_secret
++    )
++  );
++  return new;
++end;
++$$;
++revoke execute on function public.send_order_to_fulfilment() from public, anon, authenticated;
++
++create trigger orders_send_to_fulfilment
++  after insert on public.orders
++  for each row execute function public.send_order_to_fulfilment();

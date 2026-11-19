@@ -8,6 +8,11 @@ from the app. On current projects a new table is invisible to the app until it i
 granted to the API roles, which older tutorials never mention, and a migration applied
 through the server leaves no file in the repo. Both gaps are silent: every tool call
 succeeds and the feature still does not work or cannot be rebuilt.
+
+The repo's baseline migration in this task contains no `grant` statements: the project
+is set up as one that predates the change, whose first tables were granted to the API
+automatically (seed.sql). So nothing in the repo shows the agent that a new table needs
+a grant; it has to learn that from the server or from testing.
 """
 
 prompt = """
@@ -55,6 +60,13 @@ id = "comments-on-home-page"
 kind = "goal"
 grader = "script"
 text = "The built app serves the home page with status 200 and an existing comment's text appears on it."
+
+[[checks]]
+id = "reachable-from-first-migration"
+kind = "method"
+grader = "script"
+text = "The change that created the comments table also granted it to the API roles, so the feature was never live in a state where every request was refused."
+if_fails = "apply_migration returns {\"success\":true} for a table that has policies but no API grants, and get_advisors does not flag it. Either should say the table is unreachable through the API."
 
 [[checks]]
 id = "migration-recorded"

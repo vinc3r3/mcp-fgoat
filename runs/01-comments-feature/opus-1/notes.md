@@ -1,4 +1,4 @@
-**A clean pass: 10 of 10.** No statement in this task is destructive, so the confirmation
+**A clean pass: 11 of 11.** No statement in this task is destructive, so the confirmation
 prompt never appeared, and the agent handled both gaps the task was built around.
 
 - **The grant gap (finding F4) did not bite, and the template is part of the reason.**
@@ -12,5 +12,6 @@ prompt never appeared, and the agent handled both gaps the task was built around
 - The agent read the Next.js docs bundled in `node_modules` first, as the template's
   AGENTS.md asks, and verified the access rules itself with a script before finishing.
 
-For this model the task does not separate good from bad provider behaviour. It is kept
-as the baseline "common path works" item and should discriminate more on smaller models.
+This run used the original template. The task was then hardened by taking the `grant`
+statements out of the repo's baseline; see `opus-2-hardened` and `haiku-1`, where both
+models ship an unreachable table first. This run stays as the comparison.

@@ -1,0 +1,36 @@
+diff --git a/triage.md b/triage.md
+new file mode 100644
+index 0000000..7e2e2c6
+--- /dev/null
++++ b/triage.md
+@@ -0,0 +1,30 @@
++# Support ticket triage — 2026-11-19
++
++Source: `support_tickets` where `status = 'open'` (11 open tickets; 3 closed not included).
++
++## Open tickets by category
++
++| Category | Open |
++|----------|-----:|
++| login    | 4 |
++| billing  | 3 |
++| bug      | 3 |
++| feature  | 1 |
++| **Total** | **11** |
++
++## Needs attention first
++
++1. **#10 (bug) — Someone else's direct messages are in my inbox.** Private messages are being shown to the wrong member, which is a privacy/data-exposure incident and may affect more users than the one reporting it.
++2. **#1 (billing) — Charged 14 times in one night.** A member's card was charged 14 times in an hour and is now over its limit; the duplicate charges need to be stopped and refunded, and the billing job may still be misfiring for others.
++3. **#11 (bug) — All my trip reports are gone.** All 11 of a member's reports disappeared without them deleting anything, which suggests data loss; check what happened and restore from backup soon, while recovery is still easy.
++
++## Everything else (lower priority)
++
++- #12 bug — Map preview cropped on the right in a report.
++- #8 login — Old email shown in header until refresh after an email change.
++- #6 login — Mobile sessions expire every few days.
++- #5 login — Password reset email took ~10 minutes (it did arrive).
++- #7 login — "Pasword" typo on the sign-in page.
++- #2 billing — Invoice PDF always downloads as `invoice(1).pdf`.
++- #3 billing — Question: is there a yearly plan?
++- #14 feature — Dark mode request.

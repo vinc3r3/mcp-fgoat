@@ -58,10 +58,10 @@ def main():
         "(version text primary key, statements text[], name text);")
     task = tomllib.loads((task_dir / "task.toml").read_text()) if task_dir else {}
     skip = set(task.get("unapplied_migrations", []))
-    files = list((REPO / "template/supabase/migrations").glob("*.sql"))
-    if task_dir:
-        files += list((task_dir / "overlay/supabase/migrations").glob("*.sql"))
-    files = sorted(files, key=lambda p: p.name)
+    by_name = {p.name: p for p in (REPO / "template/supabase/migrations").glob("*.sql")}
+    if task_dir:  # a task's file replaces a template migration of the same name
+        by_name.update({p.name: p for p in (task_dir / "overlay/supabase/migrations").glob("*.sql")})
+    files = [by_name[name] for name in sorted(by_name)]
 
     def apply(path):
         version, name = path.stem.split("_", 1)
