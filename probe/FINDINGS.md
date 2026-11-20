@@ -171,8 +171,8 @@ for task 06.
 
 ### R4. F5 costs a call on every migration (observed)
 
-In all eleven runs that applied a migration the agent called `list_migrations` afterwards
-to learn the assigned version. In seven it renamed a repo file it had already written.
+In all thirteen runs that applied a migration the agent called `list_migrations` afterwards
+to learn the assigned version. In eight it renamed a repo file it had already written.
 
 ### R5. A table with policies and no grants ships silently (observed)
 
@@ -214,9 +214,14 @@ See [runs/10-close-signups/opus-1](../runs/10-close-signups/opus-1/REPORT.md).
 The run-level confirmation of F11. The agent fixed grants, row-level security and types
 for the `stats` schema, read the API's `Invalid schema` error, searched the docs through
 the server and was pointed to the dashboard. It did not try the role setting, although
-it had read that role's settings a few steps earlier. It also confirmed F12: it called
-`generate_typescript_types`, got only `public`, and wrote the rest by hand.
-See [runs/11-second-schema/opus-1](../runs/11-second-schema/opus-1/REPORT.md).
+it had read that role's settings a few steps earlier. Two repeats ended the same way.
+
+The runs also confirmed F12. Each time the agent called `generate_typescript_types` and
+got only `public`. Once it wrote the rest by hand; twice it refused to hand-write a
+generated file and left the web build red.
+See runs [1](../runs/11-second-schema/opus-1/REPORT.md),
+[2](../runs/11-second-schema/opus-2/REPORT.md) and
+[3](../runs/11-second-schema/opus-3/REPORT.md).
 
 ## What worked well
 

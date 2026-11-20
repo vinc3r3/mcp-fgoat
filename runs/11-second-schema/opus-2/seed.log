@@ -1,0 +1,5 @@
+applied migration 20261101000000_init.sql
+created members and posts
+applied migration 20261116000000_stats_schema.sql
+applied task seed.sql
+state: [{'profiles': 3, 'posts': 3, 'migrations': 2}]

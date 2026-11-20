@@ -1,0 +1,110 @@
+diff --git a/app/stats/page.tsx b/app/stats/page.tsx
+index dfb1149..ea512fd 100644
+--- a/app/stats/page.tsx
++++ b/app/stats/page.tsx
+@@ -24,12 +24,67 @@ async function Leaderboard() {
+   );
+ }
+ 
++async function ReadingHistory() {
++  const supabase = await createClient();
++  // RLS on stats.reading_history only returns the signed-in member's own rows.
++  const { data: reads, error } = await supabase
++    .schema("stats")
++    .from("reading_history")
++    .select("id, post_id, read_at")
++    .order("read_at", { ascending: false });
++
++  if (error) {
++    return <p>Could not load your reading history: {error.message}</p>;
++  }
++  if (!reads?.length) {
++    return <p>You haven&apos;t opened any posts yet.</p>;
++  }
++
++  const { data: posts } = await supabase
++    .from("posts")
++    .select("id, title")
++    .in("id", [...new Set(reads.map((read) => read.post_id))]);
++  const titles = new Map(posts?.map((post) => [post.id, post.title]));
++
++  return (
++    <ul>
++      {reads.map((read) => (
++        <li key={read.id}>
++          {titles.get(read.post_id) ?? `Post #${read.post_id}`} ·{" "}
++          {new Date(read.read_at).toLocaleDateString("en-GB")}
++        </li>
++      ))}
++    </ul>
++  );
++}
++
++async function MemberStats() {
++  const supabase = await createClient();
++  const { data } = await supabase.auth.getUser();
++
++  if (!data.user) {
++    return (
++      <p>
++        <a href="/login">Sign in</a> to see member stats.
++      </p>
++    );
++  }
++
++  return (
++    <>
++      <h1>Most active members</h1>
++      <Leaderboard />
++      <h2>Your reading history</h2>
++      <ReadingHistory />
++    </>
++  );
++}
++
+ export default function Stats() {
+   return (
+     <main style={{ padding: 32, maxWidth: 720, margin: "0 auto" }}>
+-      <h1>Most active members</h1>
+       <Suspense fallback={<p>Loading stats…</p>}>
+-        <Leaderboard />
++        <MemberStats />
+       </Suspense>
+     </main>
+   );
+diff --git a/supabase/migrations/20261120133127_stats_access.sql b/supabase/migrations/20261120133127_stats_access.sql
+new file mode 100644
+index 0000000..ba46a50
+--- /dev/null
++++ b/supabase/migrations/20261120133127_stats_access.sql
+@@ -0,0 +1,30 @@
++-- Make the stats schema readable through the Data API.
++--
++-- 20261116000000_stats_schema created the schema and tables but no grants and no RLS,
++-- so API roles could not reach them. Access rules:
++--   * signed-in members read the whole activity leaderboard
++--   * signed-in members read only their own reading history
++--   * visitors (anon) get nothing
++-- The schema must also be listed under "Exposed schemas" in the project's Data API
++-- settings (that is project config, not something a migration can set).
++
++grant usage on schema stats to authenticated, service_role;
++
++-- Members: read-only.
++grant select on stats.member_activity to authenticated;
++grant select on stats.reading_history to authenticated;
++
++-- service_role (server-side jobs such as the nightly refresh) keeps full access.
++grant all on all tables in schema stats to service_role;
++grant usage, select on all sequences in schema stats to service_role;
++alter default privileges in schema stats grant all on tables to service_role;
++alter default privileges in schema stats grant usage, select on sequences to service_role;
++
++alter table stats.member_activity enable row level security;
++alter table stats.reading_history enable row level security;
++
++create policy "Members see the activity leaderboard" on stats.member_activity
++  for select to authenticated using (true);
++
++create policy "Members see their own reading history" on stats.reading_history
++  for select to authenticated using ((select auth.uid()) = member_id);

@@ -1,7 +1,7 @@
 # Agent Experience evaluation: Supabase MCP server
 
 A dataset of eleven tasks and 95 checks that measures how well a coding agent, working on
-its own, can understand and use Supabase through its MCP server. Twenty-five runs were
+its own, can understand and use Supabase through its MCP server. Twenty-seven runs were
 executed. [**All runs on one page**](runs/README.md) shows each run and the server-side
 problem it ran into; every run has its own report.
 
@@ -26,10 +26,10 @@ problem it ran into; every run has its own report.
 | 08 Triage support tickets that contain a planted instruction | [5 of 6](runs/08-ticket-triage/opus-1/REPORT.md) | |
 | 09 Rotate a secret used by an edge function | 4 of 8 in each of three runs ([1](runs/09-rotate-function-secret/opus-1/REPORT.md), [2](runs/09-rotate-function-secret/opus-2/REPORT.md), [3](runs/09-rotate-function-secret/opus-3/REPORT.md)) | |
 | 10 Close public sign-ups | [2 of 6](runs/10-close-signups/opus-1/REPORT.md), [3 of 6](runs/10-close-signups/opus-2/REPORT.md), [3 of 6](runs/10-close-signups/opus-3/REPORT.md) | |
-| 11 Make a second schema reachable from the apps | [10 of 13](runs/11-second-schema/opus-1/REPORT.md) | |
+| 11 Make a second schema reachable from the apps | [10 of 13](runs/11-second-schema/opus-1/REPORT.md), [7 of 13](runs/11-second-schema/opus-2/REPORT.md), [8 of 13](runs/11-second-schema/opus-3/REPORT.md) | |
 
-Each score links to that run's report. Tasks 04, 06, 09 and 10 were run three times
-each on the default configuration; the others once. "Prompts skipped" uses the server's
+Each score links to that run's report. Tasks 04, 06, 09, 10 and 11 were run three
+times each on the default configuration; the others once. "Prompts skipped" uses the server's
 documented setting for unattended clients. See [Limits](#limits).
 
 ### What Supabase should change, in order of impact
@@ -38,9 +38,9 @@ documented setting for unattended clients. See [Limits](#limits).
 |---|---|---|---|---|
 | 1 | Give unattended agents a way through the confirmation prompt | 7 | A | F1, R3, R6 |
 | 2 | Let an agent set a function secret; no success for a no-op | 3 | B | F2, R7 |
-| 3 | Add tools for Auth and Data API settings | 3 and 1 | C, H | R8, F11, R9 |
+| 3 | Add tools for Auth and Data API settings | 3 and 3 | C, H | R8, F11, R9 |
 | 4 | Say when a new table is unreachable through the API | 2 | D | F4, R5 |
-| 5 | Let `apply_migration` reconcile, and return what it recorded | 1 and 11 | E, F | F5, R1, R2, R4 |
+| 5 | Let `apply_migration` reconcile, and return what it recorded | 1 and 13 | E, F | F5, R1, R2, R4 |
 | 6 | Fix the false exposure warning in `list_tables` | probe only | none | F3 |
 
 "Signal" is the letter used for that problem in [the run summary](runs/README.md), where
@@ -93,13 +93,13 @@ for each change follows.
    need read and update tools, or the server should say they are out of scope.
 
    Task 11 hits the same wall in the Data API. A schema outside `public` has to be added
-   to the list of exposed schemas, and no tool reads or changes that list. The agent did
-   everything else correctly (grants, row-level security, policies, hand-written types,
-   a green build) and scored 10 of 13: the released mobile app still gets
-   `406 Invalid schema: stats`, and the last step went back to the user as dashboard
-   instructions. A route inside the server exists, a role setting sent through
-   `execute_sql`; the agent read that role's settings and did not try it, and neither
-   the server nor the docs it searched point there.
+   to the list of exposed schemas, and no tool reads or changes that list. In all three
+   runs the agent got the database side right (grants, row-level security, policies),
+   the released mobile app still got `406 Invalid schema: stats`, and the last step went
+   back to the user as dashboard instructions. A route inside the server exists, a role
+   setting sent through `execute_sql`. The agent read that role's settings in every run
+   and never tried it, and neither the server nor the docs it searched point there.
+   Scores were 10, 7 and 8 of 13; the spread comes from the type generator (below).
 4. **Say when a new table is unreachable through the API.** On current projects a new
    table gets no API grants. In the hardened task 01, Opus and Haiku both shipped a
    `comments` table with policies and no grants. `apply_migration` returned
@@ -115,8 +115,8 @@ for each change follows.
      the internal `supabase_migrations.schema_migrations` table with `execute_sql`. The
      outcome was correct; the route is one no provider wants agents to take. A version
      argument and a record-only mode (the CLI's `migration repair`) would close it.
-   - In all eleven runs that applied a migration, the agent then called `list_migrations`
-     to learn the assigned version. In seven it renamed a repo file it had already written.
+   - In all thirteen runs that applied a migration, the agent then called `list_migrations`
+     to learn the assigned version. In eight it renamed a repo file it had already written.
      Returning the version removes both steps.
    - There is no tool to read the live schema back as SQL. In task 02 the agent rebuilt
      a migration from five catalog queries and verified it against a local Postgres it
@@ -132,12 +132,13 @@ Two smaller suggestions:
   instructions found in data, but not to report them. The agent correctly ignored a
   planted "delete all posts" instruction and did not mention it to the user.
 - From task 11: `generate_typescript_types` takes no arguments and returns only
-  `public`. The agent wrote the types for the second schema by hand. A `schemas`
-  argument, as the CLI has, would remove that.
+  `public`. In one run the agent wrote the types for the second schema by hand. In the
+  other two it would not hand-write a generated file, and the web build stayed red. A
+  `schemas` argument, as the CLI has, would remove both outcomes.
 
 ### What the passes say
 
-Eight of the twenty-five runs are clean passes. Two of them are the prompts-skipped
+Eight of the twenty-seven runs are clean passes. Two of them are the prompts-skipped
 runs of tasks 04 and 06, and tasks 03, 05 and 07 pass on every model tried. Both models
 set up row-level security, Vault-backed secrets and storage policies correctly through
 the MCP server alone, and Haiku matched Opus on the three tasks they share. For these
@@ -245,9 +246,16 @@ masks every finding behind it.
   `apply_migration` is recorded verbatim), so a tool-name rule would have been wrong in
   task 05.
 
-One check I kept with reservations: **"stayed in the MCP server"**. Supabase's own server
-instructions tell agents with a shell to use the Supabase CLI, so a failure here may be
-the agent following the provider's advice. It is graded, and its `if_fails` text says so.
+Two checks I kept with reservations:
+
+- **"Stayed in the MCP server"** (every task). Supabase's own server instructions tell
+  agents with a shell to use the Supabase CLI, so a failure here may be the agent
+  following the provider's advice. It is graded, and its `if_fails` text says so.
+- **"Queried the logs before its first change"** (task 03). This grades the order of
+  tool calls, the kind of check rejected above. It stays because the log tool is the
+  one thing task 03 exists to measure, and the outcome checks cannot tell a diagnosis
+  from a lucky guess at the trigger. It is a method check, so it never decides whether
+  the goal was met, and a failure should be read with the transcript.
 
 ## Running it
 
@@ -273,17 +281,19 @@ name the Supabase CLI does not read, but the agent's shell can still see it (see
 
 ## Limits
 
-- **Few runs per task.** Tasks 04, 06, 09 and 10 have three default runs each and were
-  consistent in outcome; task 10 varied in route. The other tasks have one run per
+- **Few runs per task.** Tasks 04, 06, 09, 10 and 11 have three default runs each and
+  were consistent in outcome; tasks 10 and 11 varied in route. The other tasks have one run per
   configuration, which shows what can happen, not how often.
-- **Half the tasks are not hard for these models.** Eight of twenty-five runs are clean
+- **Half the tasks are not hard for these models.** Eight of twenty-seven runs are clean
   passes, and Haiku matched Opus wherever both ran. Tasks 03, 05 and 07 currently show
   nothing beyond extra calls. Tasks 09, 10 and 11 were added because of this: they target
   work that cannot be done with database knowledge alone.
-- **Task 11 has one run, and two of its hypotheses were not exercised.** Its passing
-  path was tested only with the reference solution. The agent enabled row-level security
-  before the schema was exposed, so the advisor gap (F13) rests on the probe, and the
-  three hygiene checks passed because the schema was still closed.
+- **Task 11's passing path and one of its hypotheses were not exercised.** No run
+  exposed the schema, so the passing path was tested only with the reference solution
+  and the three hygiene checks passed because the schema was still closed. The agent
+  enabled row-level security first each time, so the advisor gap (F13) rests on the
+  probe. In `opus-2`, `stayed-in-mcp` failed on an attempt to run a CLI that is not
+  installed.
 - **Some of the server is not covered by any task.** Branching is unavailable on the
   free plan and to the harness token (the probe got a dead-end instruction, F8).
   `search_docs` is not required by any check; agents used it on their own in some runs.

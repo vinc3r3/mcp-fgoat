@@ -1,0 +1,41 @@
+diff --git a/app/stats/page.tsx b/app/stats/page.tsx
+index dfb1149..1c9758f 100644
+--- a/app/stats/page.tsx
++++ b/app/stats/page.tsx
+@@ -3,6 +3,13 @@ import { createClient } from "@/lib/supabase/server";
+ 
+ async function Leaderboard() {
+   const supabase = await createClient();
++  const {
++    data: { user },
++  } = await supabase.auth.getUser();
++  if (!user) {
++    return <p>Sign in to see member stats.</p>;
++  }
++
+   const { data: members, error } = await supabase
+     .schema("stats")
+     .from("member_activity")
+diff --git a/supabase/migrations/20261120133428_stats_api_access.sql b/supabase/migrations/20261120133428_stats_api_access.sql
+new file mode 100644
+index 0000000..f741b55
+--- /dev/null
++++ b/supabase/migrations/20261120133428_stats_api_access.sql
+@@ -0,0 +1,17 @@
++-- Make the stats schema readable through the Data API for signed-in members only.
++-- Visitors (anon) get no access to the schema at all.
++grant usage on schema stats to authenticated;
++
++alter table stats.member_activity enable row level security;
++alter table stats.reading_history enable row level security;
++
++grant select on stats.member_activity to authenticated;
++grant select on stats.reading_history to authenticated;
++
++-- Every signed-in member can see the whole leaderboard.
++create policy "Members see the leaderboard" on stats.member_activity
++  for select to authenticated using (true);
++
++-- A member only ever sees their own reading history.
++create policy "Members see their own reading history" on stats.reading_history
++  for select to authenticated using ((select auth.uid()) = member_id);
