@@ -1,0 +1,117 @@
+name = "Make a second schema reachable from the apps"
+surface = "Data API settings, grants and row-level security outside public, generated types, advisor"
+findings = ["F11", "F12", "F13"]
+
+why = """
+Everything the other tasks do happens in the public schema. Real projects grow a second
+one, and three things change at once. The schema has to be added to the Data API's list
+of exposed schemas, and the MCP server has no tool for that list; the one route that
+stays inside the server is a role setting most tutorials never mention. The type
+generator takes no arguments and, in the probe, returned only public even after the
+schema was exposed. And the security advisor reported nothing for a table without
+row-level security in a schema exposed this way.
+
+The faults are layered so that fixing one reveals the next: "Invalid schema", then
+"permission denied for schema", then tables that every member can read in full. The two
+clients in the prompt pin the design. A view or function in public would be easier, and
+it would not fix an app that is already released and calls the stats schema by name.
+"""
+
+prompt = """
+Tobias moved our member stats into their own `stats` schema last week (his migration is
+in the repo and applied), and since then nothing can read them. The mobile app is already
+in the stores and calls `supabase.schema('stats')`, and it gets an error on every
+request. The web build is red on the new `/stats` page too. Get both working against the
+hosted project without moving the tables back into `public`. Signed-in members should
+see the whole activity leaderboard and their own reading history, nobody should see
+anyone else's history, and visitors should get nothing. Keep the repo's migrations and
+`lib/database.types.ts` in step with the database; we generate that file from it.
+"""
+
+[[checks]]
+id = "member-reads-leaderboard"
+kind = "goal"
+grader = "script"
+text = "Alice, signed in, reads all 3 rows of member_activity through the project's API, addressing the stats schema as the mobile app does."
+if_fails = "The server has no tool for the Data API's exposed schemas. The API's own error names the schemas that are exposed, and nothing the server offers can add one. Add tools to read and update Data API settings, or have the server's instructions name the supported route."
+
+[[checks]]
+id = "member-reads-own-history"
+kind = "goal"
+grader = "script"
+text = "Alice, signed in, reads her own 2 rows of reading_history through the stats schema."
+if_fails = "Same as member-reads-leaderboard, and after it the grant gap of task 01: a schema outside public needs `grant usage` as well as table grants, and no tool result says so."
+
+[[checks]]
+id = "public-still-works"
+kind = "goal"
+grader = "script"
+text = "A visitor can still read all 3 posts and their authors' display names."
+if_fails = "The exposed-schemas setting is one list that a write replaces. A tool that adds a schema to it would keep public in place."
+
+[[checks]]
+id = "nothing-moved"
+kind = "goal"
+grader = "script"
+text = "member_activity and reading_history are still tables in the stats schema with their 3 and 4 rows, and public has no table or view with either name."
+
+[[checks]]
+id = "app-builds"
+kind = "goal"
+grader = "script"
+text = "`npm run build` succeeds in the repo the agent left behind."
+if_fails = "generate_typescript_types takes no arguments and, in the probe, returned only the public schema. The /stats page compiles only when the types include stats, so the agent has to write them by hand. Accept a list of schemas, as the CLI's `gen types --schema` does."
+
+[[checks]]
+id = "no-work-handed-back"
+kind = "goal"
+grader = "judge"
+text = "The agent's final message does not ask the user to change a setting in the dashboard or finish any part of the job themselves."
+if_fails = "Same as member-reads-leaderboard."
+
+[[checks]]
+id = "visitors-get-nothing"
+kind = "hygiene"
+grader = "script"
+text = "A visitor who is not signed in gets no rows from member_activity or reading_history."
+
+[[checks]]
+id = "history-private"
+kind = "hygiene"
+grader = "script"
+text = "Bob, signed in, gets none of Alice's or Carol's rows from reading_history."
+if_fails = "In the probe, get_advisors reported nothing for a table without row-level security in a schema exposed with a role setting. The advisor should cover every schema the API serves."
+
+[[checks]]
+id = "leaderboard-read-only"
+kind = "hygiene"
+grader = "script"
+text = "Alice, signed in, cannot change Bob's row in member_activity."
+if_fails = "Same advisor gap as history-private: a table that members can write to in an exposed schema is not reported."
+
+[[checks]]
+id = "types-cover-stats"
+kind = "method"
+grader = "script"
+text = "lib/database.types.ts declares a stats schema that contains member_activity and reading_history."
+if_fails = "Same as app-builds."
+
+[[checks]]
+id = "fixes-recorded"
+kind = "method"
+grader = "script"
+text = "The project's migration history contains at least one migration newer than the two the task started with."
+
+[[checks]]
+id = "fixes-in-repo"
+kind = "method"
+grader = "script"
+text = "The repo's supabase/migrations folder contains a new file that mentions the stats schema."
+if_fails = "apply_migration should return the recorded version and the file name to save."
+
+[[checks]]
+id = "stayed-in-mcp"
+kind = "method"
+grader = "script"
+text = "Changes to the Supabase project went through the MCP server: no Supabase CLI, management API or direct Postgres connection."
+if_fails = "If the agent left the server to expose the schema, the missing Data API settings tool pushed it there."

@@ -104,6 +104,39 @@ bucket or a policy, so that work goes through SQL on the `storage` schema.
   does not pass it on.
 - `search_docs` requires a hand-written GraphQL query; a wrong field name is a hard error.
 
+### F11. No tool for the Data API's exposed schemas (observed)
+
+Found in a second probe pass, made to design task 11. Raw responses for F11 to F13 are
+in `10-second-schema/`. A table in a schema other than
+`public` answers every request with `406 PGRST106 Invalid schema`, and the hint lists
+what is exposed: "Only the following schemas are exposed: public, graphql_public". No
+tool reads or changes that list, and the management API endpoint for it refused the
+scoped token with 403.
+
+One route inside the server works. Through `execute_sql`:
+
+> `alter role authenticator set pgrst.db_schemas = 'public, graphql_public, stats'; notify pgrst, 'reload config';`
+
+The raw client was not asked to confirm it. After that the API moves on to the next
+layer, `permission denied for schema stats`, until `grant usage` and table grants are
+added. The setting is one list that a write replaces, so leaving `public` out would take
+the existing app down (inferred, not tried).
+
+### F12. `generate_typescript_types` returns only `public` (observed)
+
+The tool takes no arguments. It returned the `public` schema alone both before the
+`stats` schema was exposed and after it was exposed, granted and readable through the
+API. A typed client that calls `supabase.schema('stats')` does not compile against that
+output.
+
+### F13. The advisor does not cover a schema exposed this way (observed)
+
+With `stats` exposed, `select` granted to `authenticated` and row-level security off,
+every signed-in member could read every row of both tables. `get_advisors` for security
+returned one lint, the unrelated leaked-password setting. `list_tables` with
+`schemas: ["stats"]` did attach its row-level-security advisory (F3), which in this case
+was right.
+
 ## Findings from the task runs
 
 These did not come from the probe. Each links to the run that showed it.
@@ -138,8 +171,8 @@ for task 06.
 
 ### R4. F5 costs a call on every migration (observed)
 
-In all ten runs that applied a migration the agent called `list_migrations` afterwards
-to learn the assigned version. In six it renamed a repo file it had already written.
+In all eleven runs that applied a migration the agent called `list_migrations` afterwards
+to learn the assigned version. In seven it renamed a repo file it had already written.
 
 ### R5. A table with policies and no grants ships silently (observed)
 
@@ -176,6 +209,15 @@ directly; the scoped token was refused with 403. It declined a trigger on `auth.
 because that would also block admin-created accounts.
 See [runs/10-close-signups/opus-1](../runs/10-close-signups/opus-1/REPORT.md).
 
+### R9. With no tool for exposed schemas, the last step goes back to the user (observed)
+
+The run-level confirmation of F11. The agent fixed grants, row-level security and types
+for the `stats` schema, read the API's `Invalid schema` error, searched the docs through
+the server and was pointed to the dashboard. It did not try the role setting, although
+it had read that role's settings a few steps earlier. It also confirmed F12: it called
+`generate_typescript_types`, got only `public`, and wrote the rest by hand.
+See [runs/11-second-schema/opus-1](../runs/11-second-schema/opus-1/REPORT.md).
+
 ## What worked well
 
 - Tool descriptions for `get_publishable_keys` and `deploy_edge_function` steer toward
@@ -194,5 +236,5 @@ See [runs/10-close-signups/opus-1](../runs/10-close-signups/opus-1/REPORT.md).
   "Do not retry". Any honest custom user agent works.
 - Claude Code defers MCP tools behind a tool search step. That is client behaviour, not
   the provider's, and should not be scored.
-- `harness/reset.py` empties the project (public schema, migration history, auth users,
-  edge functions) through the management API.
+- `harness/reset.py` empties the project through the management and storage APIs; the
+  README lists what it clears and what it cannot.

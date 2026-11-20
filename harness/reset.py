@@ -26,6 +26,11 @@ HEADERS = {
 RESET_SQL = """
 drop schema if exists public cascade;
 create schema public;
+-- Task 11 works in a second schema and may expose it to the API with a role setting;
+-- neither lives in public, so both are cleared by name.
+drop schema if exists stats cascade;
+alter role authenticator reset pgrst.db_schemas;
+alter role authenticator reset pgrst.db_extra_search_path;
 grant usage on schema public to postgres, anon, authenticated, service_role;
 alter default privileges in schema public grant all on tables to postgres, service_role;
 alter default privileges in schema public grant all on functions to postgres, service_role;
@@ -47,6 +52,7 @@ do $$ declare p record; begin
     execute format('drop policy %I on storage.objects', p.policyname);
   end loop;
 end $$;
+notify pgrst, 'reload config';
 notify pgrst, 'reload schema';
 """
 

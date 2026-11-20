@@ -1,0 +1,4 @@
+ app/stats/page.tsx                                 |  9 +++
+ lib/database.types.ts                              | 84 ++++++++++++++++++++++
+ .../migrations/20261120132132_stats_access.sql     | 26 +++++++
+ 3 files changed, 119 insertions(+)

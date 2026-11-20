@@ -1,6 +1,6 @@
 name = "Close public sign-ups"
 surface = "Auth configuration"
-findings = ["no Auth configuration tool on the server"]
+findings = ["R8"]
 
 why = """
 Auth is one of Supabase's main products, and its settings (who can sign up, email

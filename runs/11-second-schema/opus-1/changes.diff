@@ -1,0 +1,152 @@
+diff --git a/app/stats/page.tsx b/app/stats/page.tsx
+index dfb1149..b676ead 100644
+--- a/app/stats/page.tsx
++++ b/app/stats/page.tsx
+@@ -3,6 +3,15 @@ import { createClient } from "@/lib/supabase/server";
+ 
+ async function Leaderboard() {
+   const supabase = await createClient();
++  const { data: auth } = await supabase.auth.getUser();
++  if (!auth.user) {
++    return (
++      <p>
++        <a href="/login">Sign in</a> to see member stats.
++      </p>
++    );
++  }
++
+   const { data: members, error } = await supabase
+     .schema("stats")
+     .from("member_activity")
+diff --git a/lib/database.types.ts b/lib/database.types.ts
+index c2d621d..ebf26c5 100644
+--- a/lib/database.types.ts
++++ b/lib/database.types.ts
+@@ -78,6 +78,87 @@ export type Database = {
+       [_ in never]: never
+     }
+   }
++  stats: {
++    Tables: {
++      member_activity: {
++        Row: {
++          display_name: string
++          member_id: string
++          posts_count: number
++          updated_at: string
++        }
++        Insert: {
++          display_name: string
++          member_id: string
++          posts_count?: number
++          updated_at?: string
++        }
++        Update: {
++          display_name?: string
++          member_id?: string
++          posts_count?: number
++          updated_at?: string
++        }
++        Relationships: [
++          {
++            foreignKeyName: "member_activity_member_id_fkey"
++            columns: ["member_id"]
++            isOneToOne: true
++            referencedRelation: "profiles"
++            referencedColumns: ["id"]
++          },
++        ]
++      }
++      reading_history: {
++        Row: {
++          id: number
++          member_id: string
++          post_id: number
++          read_at: string
++        }
++        Insert: {
++          id?: never
++          member_id: string
++          post_id: number
++          read_at?: string
++        }
++        Update: {
++          id?: never
++          member_id?: string
++          post_id?: number
++          read_at?: string
++        }
++        Relationships: [
++          {
++            foreignKeyName: "reading_history_member_id_fkey"
++            columns: ["member_id"]
++            isOneToOne: false
++            referencedRelation: "profiles"
++            referencedColumns: ["id"]
++          },
++          {
++            foreignKeyName: "reading_history_post_id_fkey"
++            columns: ["post_id"]
++            isOneToOne: false
++            referencedRelation: "posts"
++            referencedColumns: ["id"]
++          },
++        ]
++      }
++    }
++    Views: {
++      [_ in never]: never
++    }
++    Functions: {
++      [_ in never]: never
++    }
++    Enums: {
++      [_ in never]: never
++    }
++    CompositeTypes: {
++      [_ in never]: never
++    }
++  }
+ }
+ 
+ type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+@@ -201,4 +282,7 @@ export const Constants = {
+   public: {
+     Enums: {},
+   },
++  stats: {
++    Enums: {},
++  },
+ } as const
+diff --git a/supabase/migrations/20261120132132_stats_access.sql b/supabase/migrations/20261120132132_stats_access.sql
+new file mode 100644
+index 0000000..a65eaba
+--- /dev/null
++++ b/supabase/migrations/20261120132132_stats_access.sql
+@@ -0,0 +1,26 @@
++-- Make the stats schema readable through the Data API.
++-- The schema must also be listed under "Exposed schemas" in the project's
++-- Data API settings; that is project config, not SQL.
++--
++-- Access rules:
++--   * visitors (anon) get nothing: no schema usage, no table grants
++--   * signed-in members see the whole activity leaderboard
++--   * signed-in members see only their own reading history
++
++alter table stats.member_activity enable row level security;
++alter table stats.reading_history enable row level security;
++
++grant usage on schema stats to authenticated, service_role;
++
++grant select on stats.member_activity to authenticated;
++grant select on stats.reading_history to authenticated;
++
++-- Server-side jobs (e.g. the nightly refresh) using the service role.
++grant all on all tables in schema stats to service_role;
++grant all on all sequences in schema stats to service_role;
++
++create policy "Members see the activity leaderboard" on stats.member_activity
++  for select to authenticated using (true);
++
++create policy "Members see their own reading history" on stats.reading_history
++  for select to authenticated using ((select auth.uid()) = member_id);

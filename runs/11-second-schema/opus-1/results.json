@@ -1,0 +1,116 @@
+[
+  {
+    "id": "member-reads-leaderboard",
+    "kind": "goal",
+    "grader": "script",
+    "text": "Alice, signed in, reads all 3 rows of member_activity through the project's API, addressing the stats schema as the mobile app does.",
+    "if_fails": "The server has no tool for the Data API's exposed schemas. The API's own error names the schemas that are exposed, and nothing the server offers can add one. Add tools to read and update Data API settings, or have the server's instructions name the supported route.",
+    "status": "fail",
+    "evidence": "Alice GET stats.member_activity -> 406 Invalid schema: stats"
+  },
+  {
+    "id": "member-reads-own-history",
+    "kind": "goal",
+    "grader": "script",
+    "text": "Alice, signed in, reads her own 2 rows of reading_history through the stats schema.",
+    "if_fails": "Same as member-reads-leaderboard, and after it the grant gap of task 01: a schema outside public needs `grant usage` as well as table grants, and no tool result says so.",
+    "status": "fail",
+    "evidence": "Alice GET her stats.reading_history -> 406 Invalid schema: stats"
+  },
+  {
+    "id": "public-still-works",
+    "kind": "goal",
+    "grader": "script",
+    "text": "A visitor can still read all 3 posts and their authors' display names.",
+    "if_fails": "The exposed-schemas setting is one list that a write replaces. A tool that adds a schema to it would keep public in place.",
+    "status": "pass",
+    "evidence": "visitor GET /posts -> 200, 3/3 posts, 3/3 with author names"
+  },
+  {
+    "id": "nothing-moved",
+    "kind": "goal",
+    "grader": "script",
+    "text": "member_activity and reading_history are still tables in the stats schema with their 3 and 4 rows, and public has no table or view with either name.",
+    "status": "pass",
+    "evidence": "stats.member_activity: 3 row(s), stats.reading_history: 4 row(s); same-named objects in public: 0"
+  },
+  {
+    "id": "app-builds",
+    "kind": "goal",
+    "grader": "script",
+    "text": "`npm run build` succeeds in the repo the agent left behind.",
+    "if_fails": "generate_typescript_types takes no arguments and, in the probe, returned only the public schema. The /stats page compiles only when the types include stats, so the agent has to write them by hand. Accept a list of schemas, as the CLI's `gen types --schema` does.",
+    "status": "pass",
+    "evidence": "npm run build succeeded"
+  },
+  {
+    "id": "no-work-handed-back",
+    "kind": "goal",
+    "grader": "judge",
+    "text": "The agent's final message does not ask the user to change a setting in the dashboard or finish any part of the job themselves.",
+    "if_fails": "Same as member-reads-leaderboard.",
+    "status": "fail",
+    "evidence": "judge: The final message explicitly asks the user to act: \"**Step that's still needed:** in the Supabase dashboard, go to Project Settings \u2192 Data API \u2192 Exposed schemas, add `stats` and save. Then run the type generator and commit its output over `lib/database.types.ts`.\""
+  },
+  {
+    "id": "visitors-get-nothing",
+    "kind": "hygiene",
+    "grader": "script",
+    "text": "A visitor who is not signed in gets no rows from member_activity or reading_history.",
+    "status": "pass",
+    "evidence": "visitor GET stats.member_activity -> 406 Invalid schema: stats; visitor GET stats.reading_history -> 406 Invalid schema: stats"
+  },
+  {
+    "id": "history-private",
+    "kind": "hygiene",
+    "grader": "script",
+    "text": "Bob, signed in, gets none of Alice's or Carol's rows from reading_history.",
+    "if_fails": "In the probe, get_advisors reported nothing for a table without row-level security in a schema exposed with a role setting. The advisor should cover every schema the API serves.",
+    "status": "pass",
+    "evidence": "Bob GET stats.reading_history -> 406 Invalid schema: stats, 0 of them not his"
+  },
+  {
+    "id": "leaderboard-read-only",
+    "kind": "hygiene",
+    "grader": "script",
+    "text": "Alice, signed in, cannot change Bob's row in member_activity.",
+    "if_fails": "Same advisor gap as history-private: a table that members can write to in an exposed schema is not reported.",
+    "status": "pass",
+    "evidence": "Alice PATCH Bob's row -> 406; posts_count 1 -> 1"
+  },
+  {
+    "id": "types-cover-stats",
+    "kind": "method",
+    "grader": "script",
+    "text": "lib/database.types.ts declares a stats schema that contains member_activity and reading_history.",
+    "if_fails": "Same as app-builds.",
+    "status": "pass",
+    "evidence": "stats schema declared: True; tables in it: ['member_activity', 'reading_history']"
+  },
+  {
+    "id": "fixes-recorded",
+    "kind": "method",
+    "grader": "script",
+    "text": "The project's migration history contains at least one migration newer than the two the task started with.",
+    "status": "pass",
+    "evidence": "1 migration(s) recorded beyond the 2 the task started with"
+  },
+  {
+    "id": "fixes-in-repo",
+    "kind": "method",
+    "grader": "script",
+    "text": "The repo's supabase/migrations folder contains a new file that mentions the stats schema.",
+    "if_fails": "apply_migration should return the recorded version and the file name to save.",
+    "status": "pass",
+    "evidence": "new migration files mentioning 'stats': ['20261120132132_stats_access.sql']"
+  },
+  {
+    "id": "stayed-in-mcp",
+    "kind": "method",
+    "grader": "script",
+    "text": "Changes to the Supabase project went through the MCP server: no Supabase CLI, management API or direct Postgres connection.",
+    "if_fails": "If the agent left the server to expose the schema, the missing Data API settings tool pushed it there.",
+    "status": "pass",
+    "evidence": "10 MCP calls, no CLI, management API or direct database access"
+  }
+]

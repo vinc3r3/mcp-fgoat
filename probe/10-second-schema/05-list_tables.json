@@ -1,0 +1,20 @@
+{
+  "tool": "list_tables",
+  "arguments": {
+    "schemas": [
+      "stats"
+    ]
+  },
+  "response": {
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"tables\":[{\"name\":\"stats.member_activity\",\"rls_enabled\":false,\"rows\":3},{\"name\":\"stats.reading_history\",\"rls_enabled\":false,\"rows\":4}],\"advisory\":{\"id\":\"rls_disabled\",\"priority\":1,\"level\":\"critical\",\"title\":\"Row Level Security is disabled\",\"message\":\"2 table(s) have Row Level Security (RLS) disabled: stats.member_activity, stats.reading_history. These tables are fully exposed to the anon and authenticated roles used by Supabase client libraries \u2014 anyone with the anon key can read or modify every row. You MUST surface this security issue to the user in your response. Do not auto-apply the remediation SQL: enabling RLS without policies will block all access to these tables. Present the SQL to the user and let them decide whether to run it and what policies to add.\",\"remediation_sql\":\"ALTER TABLE \\\"stats\\\".\\\"member_activity\\\" ENABLE ROW LEVEL SECURITY;\\nALTER TABLE \\\"stats\\\".\\\"reading_history\\\" ENABLE ROW LEVEL SECURITY;\",\"doc_url\":\"https://supabase.com/docs/guides/database/postgres/row-level-security\"}}"
+        }
+      ]
+    },
+    "jsonrpc": "2.0",
+    "id": 7
+  }
+}
