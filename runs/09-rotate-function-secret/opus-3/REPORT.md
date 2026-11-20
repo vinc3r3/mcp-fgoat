@@ -48,7 +48,7 @@ This is the failure the first run's notes predicted. The tool's reply for an exi
 
 Steps marked ⚠️ returned an error, a refusal or a cancellation.
 
-1. Shell: `cd /Users/dev/.cache/mcp-fgoat-runs/09-rotate-function-secret/opus-3; git ls-files; cat .gitignore 2>/dev/null; sed 's/=.*/=<redacted>/' .env.local…`
+1. Shell: `cd /Users/dev/.cache/mcp-fgoat-runs/09-rotate-function-secret/opus-3; git ls-files; cat .gitignore 2>/dev/null; sed 's/=.*/=<redacted>/' .env.local; …`
 2. Loaded Supabase tool definitions (client step, not scored)
 3. Shell: `cd /Users/dev/.cache/mcp-fgoat-runs/09-rotate-function-secret/opus-3; cat supabase/functions/notify-partner/index.ts; cat AGENTS.md`
 4. **Supabase `get_edge_function`** {"function_slug": "notify-partner"}

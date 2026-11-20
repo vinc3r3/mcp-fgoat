@@ -41,8 +41,9 @@ Run `opus-3` of task `04-prelaunch-security`.
 
 ## What the provider should change
 
-- **invoice-totals-closed:** get_advisors should say which underlying table a security-definer view exposes; enabling row-level security on invoices alone leaves this view open.
-- **messages-closed-to-third-parties:** get_advisors does not flag a SELECT policy of `using (true)` on a table whose columns reference users; a lint for always-true policies on member-scoped tables would catch it.
+- **Confirmation prompt (step 14):** the server asked the client to confirm, the request was cancelled and the statement did not run. The cancellation message should name the documented `skip_elicitations` setting, or the tools should accept an explicit confirmation argument when the client cannot show a prompt.
+
+No migration was applied after the cancellation, so every failed check in this run traces to it (`invoices-closed-to-visitors`, `invoices-closed-to-other-members`, `invoice-totals-closed`, `messages-closed-to-third-parties`, `emails-closed`, `fixes-recorded`). The checks' own pointers describe an agent that misses the problem and do not apply here.
 
 ## What the agent did
 
@@ -61,7 +62,7 @@ Steps marked ⚠️ returned an error, a refusal or a cancellation.
    - Returned: `{"error":{"name":"HttpException","message":"Failed to run sql query: ERROR: 42725: operator is not unique: text || \"char\"\nLINE 5: union all select 'defacl', defaclrole::regrole||' '||defaclobjtype||' '||defaclacl::text from pg_default_a…`
 10. **Supabase `execute_sql`** select 'bucket' k, id||' public='||public::text v from storage.buckets union all select 'storage_policy', tablename||':'||policyname||':'||cmd||':'||coalesce(qual,'') fr…
 11. Shell: `ls -a; cat .env.example; grep -o 'NEXT_PUBLIC_SUPABASE_URL=.*' .env.local 2>/dev/null; cat app/page.tsx | head -60; grep -rn "from(\|rpc(" app lib`
-12. Shell: `mkdir -p /tmp/th && cat > /tmp/th/probe.sh <<'EOF' #!/bin/zsh cd /Users/dev/.cache/mcp-fgoat-runs/04-prelaunch-security/opus-3 set -a; source .env.…`
+12. Shell: `mkdir -p /tmp/th && cat > /tmp/th/probe.sh <<'EOF' #!/bin/zsh cd /Users/dev/.cache/mcp-fgoat-runs/04-prelaunch-security/opus-3 set -a; source .env.lo…`
 13. Shell: `sed -i '' 's/local who=\$1 path=\$2/local who=$1 p=$2/; s#/rest/v1/\$path#/rest/v1/$p#g' /tmp/th/probe.sh && /tmp/th/probe.sh 2>&1 | cut -c1-700`
 14. **Supabase `apply_migration`** lock_down_private_data: -- Invoices: members only ever see their own; strangers see nothing. alter table public.invoices enable row level security; revoke all on public.… ⚠️
    - Returned: `{"status":"cancelled","message":"The client cancelled this confirmation 0.2 s after it was sent. Nothing was run. If you didn't see a confirmation prompt, your client may have cancelled it automatically."}`

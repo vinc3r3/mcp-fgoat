@@ -41,8 +41,9 @@ Run `opus-2` of task `04-prelaunch-security`.
 
 ## What the provider should change
 
-- **invoice-totals-closed:** get_advisors should say which underlying table a security-definer view exposes; enabling row-level security on invoices alone leaves this view open.
-- **messages-closed-to-third-parties:** get_advisors does not flag a SELECT policy of `using (true)` on a table whose columns reference users; a lint for always-true policies on member-scoped tables would catch it.
+- **Confirmation prompt (step 15):** the server asked the client to confirm, the request was cancelled and the statement did not run. The cancellation message should name the documented `skip_elicitations` setting, or the tools should accept an explicit confirmation argument when the client cannot show a prompt.
+
+No migration was applied after the cancellation, so every failed check in this run traces to it (`invoices-closed-to-visitors`, `invoices-closed-to-other-members`, `invoice-totals-closed`, `messages-closed-to-third-parties`, `emails-closed`, `fixes-recorded`). The checks' own pointers describe an agent that misses the problem and do not apply here.
 
 ## What the agent did
 

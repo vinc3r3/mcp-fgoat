@@ -1,0 +1,2 @@
+ supabase/migrations/20261120120000_drop_badges.sql | 3 +++
+ 1 file changed, 3 insertions(+)

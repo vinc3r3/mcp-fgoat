@@ -13,6 +13,10 @@ import sys
 import tomllib
 
 ICON = {"pass": "✅ pass", "fail": "❌ fail", "error": "⚠️ error", "not graded": "➖ not graded"}
+CANCELLED = "cancelled this confirmation"
+CONFIRMATION_FIX = (
+    "The cancellation message should name the documented `skip_elicitations` setting, or the tools "
+    "should accept an explicit confirmation argument when the client cannot show a prompt.")
 
 
 def short(value, limit):
@@ -110,8 +114,24 @@ def main():
         if r["status"] == "fail" and r.get("if_fails") and r["if_fails"] not in [f for _, f in fixes]:
             fixes.append((r["id"], r["if_fails"]))
     out += ["", "## What the provider should change", ""]
-    out += [f"- **{cid}:** {fix}" for cid, fix in fixes] or [
-        "No failed check in this run points to a provider-side change."]
+    # A cancelled confirmation is read from the transcript, not from a check: when it
+    # stops the agent's change from running, the checks' own pointers name the wrong cause.
+    cancelled = [i for i, (_, result) in enumerate(steps) if result and CANCELLED in result]
+    failed = [r["id"] for r in results if r["status"] == "fail"]
+    if cancelled:
+        where = ", ".join(str(i + 1) for i in cancelled)
+        out.append(f"- **Confirmation prompt (step {where}):** the server asked the client to confirm, "
+                   f"the request was cancelled and the statement did not run. {CONFIRMATION_FIX}")
+        applied_later = any(call.startswith("**Supabase `apply_migration`") and '"success":true' in (result or "")
+                            for call, result in steps[cancelled[-1] + 1:])
+        if failed and not applied_later:
+            out += ["", "No migration was applied after the cancellation, so every failed check in this run "
+                        "traces to it (" + ", ".join(f"`{cid}`" for cid in failed) + "). The checks' own "
+                        "pointers describe an agent that misses the problem and do not apply here."]
+            fixes = []
+    out += [f"- **{cid}:** {fix}" for cid, fix in fixes]
+    if not cancelled and not fixes:
+        out.append("No failed check in this run points to a provider-side change.")
 
     out += ["", "## What the agent did", "", "Steps marked ⚠️ returned an error, a refusal or a cancellation.", ""]
     for i, (call, result) in enumerate(steps, 1):

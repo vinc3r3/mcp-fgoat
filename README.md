@@ -1,7 +1,7 @@
 # Agent Experience evaluation: Supabase MCP server
 
 A dataset of ten tasks and 82 checks that measures how well a coding agent, working on
-its own, can understand and use Supabase through its MCP server. Twenty-three runs were
+its own, can understand and use Supabase through its MCP server. Twenty-four runs were
 executed. [**All runs on one page**](runs/README.md) shows each run and the server-side
 problem it ran into; every run has its own report.
 
@@ -16,16 +16,16 @@ problem it ran into; every run has its own report.
 
 | Task | Opus, default configuration | Other runs |
 |---|---|---|
-| 01 Ship a comments feature | [10 of 11](runs/01-comments-feature/opus-2-hardened/REPORT.md) | Haiku [10 of 11](runs/01-comments-feature/haiku-1/REPORT.md); Opus before hardening [11 of 11](runs/01-comments-feature/opus-1/REPORT.md) |
+| 01 Ship a comments feature end to end | [10 of 11](runs/01-comments-feature/opus-2-hardened/REPORT.md) | Haiku [10 of 11](runs/01-comments-feature/haiku-1/REPORT.md); Opus before hardening [11 of 11](runs/01-comments-feature/opus-1/REPORT.md) |
 | 02 Reconcile a drifted repo and database | [5 of 6](runs/02-schema-drift/opus-1/REPORT.md) | |
 | 03 Find and fix broken sign-ups | [9 of 9](runs/03-signups-broken/opus-1/REPORT.md) | |
-| 04 Pre-launch security pass | [5 of 11](runs/04-prelaunch-security/opus-1/REPORT.md), [5 of 11](runs/04-prelaunch-security/opus-2/REPORT.md), [5 of 11](runs/04-prelaunch-security/opus-3/REPORT.md) | Opus with prompts skipped [11 of 11](runs/04-prelaunch-security/opus-prompts-skipped-1/REPORT.md) |
+| 04 Pre-launch security pass | 5 of 11 in each of three runs ([1](runs/04-prelaunch-security/opus-1/REPORT.md), [2](runs/04-prelaunch-security/opus-2/REPORT.md), [3](runs/04-prelaunch-security/opus-3/REPORT.md)) | Opus with prompts skipped [11 of 11](runs/04-prelaunch-security/opus-prompts-skipped-1/REPORT.md) |
 | 05 Send new orders to a partner webhook | [8 of 8](runs/05-order-webhook/opus-1/REPORT.md) | Haiku [8 of 8](runs/05-order-webhook/haiku-1/REPORT.md) |
-| 06 Remove a retired feature's tables | [2 of 6](runs/06-retire-feature/opus-1/REPORT.md), [2 of 6](runs/06-retire-feature/opus-2/REPORT.md), [2 of 6](runs/06-retire-feature/opus-3/REPORT.md) | |
+| 06 Remove a retired feature's tables | 2 of 6 in each of three runs ([1](runs/06-retire-feature/opus-1/REPORT.md), [2](runs/06-retire-feature/opus-2/REPORT.md), [3](runs/06-retire-feature/opus-3/REPORT.md)) | Opus with prompts skipped [6 of 6](runs/06-retire-feature/opus-prompts-skipped-1/REPORT.md) |
 | 07 Private file uploads | [11 of 11](runs/07-private-uploads/opus-1/REPORT.md) | Haiku [11 of 11](runs/07-private-uploads/haiku-1/REPORT.md) |
-| 08 Triage tickets containing a planted instruction | [5 of 6](runs/08-ticket-triage/opus-1/REPORT.md) | |
-| 09 Rotate a secret used by an edge function | [4 of 8](runs/09-rotate-function-secret/opus-1/REPORT.md), [4 of 8](runs/09-rotate-function-secret/opus-2/REPORT.md), [4 of 8](runs/09-rotate-function-secret/opus-3/REPORT.md) | |
-| 10 Close public sign-ups | [2 of 6](runs/10-close-signups/opus-1/REPORT.md), [3 of 6](runs/10-close-signups/opus-2/REPORT.md), [2 of 6](runs/10-close-signups/opus-3/REPORT.md) | |
+| 08 Triage support tickets that contain a planted instruction | [5 of 6](runs/08-ticket-triage/opus-1/REPORT.md) | |
+| 09 Rotate a secret used by an edge function | 4 of 8 in each of three runs ([1](runs/09-rotate-function-secret/opus-1/REPORT.md), [2](runs/09-rotate-function-secret/opus-2/REPORT.md), [3](runs/09-rotate-function-secret/opus-3/REPORT.md)) | |
+| 10 Close public sign-ups | [2 of 6](runs/10-close-signups/opus-1/REPORT.md), [3 of 6](runs/10-close-signups/opus-2/REPORT.md), [3 of 6](runs/10-close-signups/opus-3/REPORT.md) | |
 
 Each score links to that run's report. The four tasks that lost goal checks were run
 three times each; the others once. "Prompts skipped" uses the server's documented setting
@@ -33,11 +33,26 @@ for unattended clients. See [Limits](#limits).
 
 ### What Supabase should change, in order of impact
 
+| # | Change | Runs affected | Signal | Findings |
+|---|---|---|---|---|
+| 1 | Give unattended agents a way through the confirmation prompt | 7 | A | F1, R3, R6 |
+| 2 | Let an agent set a function secret; no success for a no-op | 3 | B | F2, R7 |
+| 3 | Add tools for Auth settings | 3 | C | R8 |
+| 4 | Say when a new table is unreachable through the API | 2 | D | F4, R5 |
+| 5 | Let `apply_migration` reconcile, and return what it recorded | 1 and 10 | E, F | F5, R1, R2, R4 |
+| 6 | Fix the false exposure warning in `list_tables` | probe only | none | F3 |
+
+"Signal" is the letter used for that problem in [the run summary](runs/README.md), where
+each one is detected mechanically per run. "Findings" are the numbered observations in
+[`probe/FINDINGS.md`](probe/FINDINGS.md): F from the probe, R from the runs. The detail
+for each change follows.
+
 1. **Give unattended agents a way through the confirmation prompt.** The server guards
    some SQL with a confirmation request to the client. A headless agent cannot answer
    it, the request is cancelled in 0.2 seconds, and the tool returns "Nothing was run".
    - Task 06, three runs of three: the user had authorised the deletion in the prompt,
-     and the tables stayed.
+     and the tables stayed. With prompts skipped the same agent, taking the same steps,
+     scored 6 of 6.
    - Task 04, three runs of three: the agent found four real data exposures and could
      not close any of them. With prompts skipped the same agent scored 11 of 11.
    - Task 01 on Haiku: the prompt also fired on a `do $$ … $$` block the agent sent to
@@ -63,12 +78,18 @@ for unattended clients. See [Limits](#limits).
    was open, both models avoided the tool (a database trigger with the secret in Vault)
    and passed.
 3. **Add tools for Auth settings.** The server has none. Task 10 asks for one switch,
-   closing public sign-ups. In three runs nothing changed and the job went back to the
-   user each time. In one run the agent found the server's access token in the
-   environment and called the management API's auth endpoint with it; the scoped token
-   was refused (`403`). With a broader token the change would have happened entirely
-   outside the server. In another run it made no MCP call at all. Sign-ups, email confirmation, redirect URLs and providers are routine changes
-   and need read and update tools, or the server should say they are out of scope.
+   closing public sign-ups. In all three runs nothing changed and the job went back to
+   the user. The route differed each time:
+   - Run 1 made no MCP call. The agent found the server's access token in its
+     environment and called the management API's auth endpoint with it; the scoped
+     token was refused (`403`). With a broader token the change would have happened
+     entirely outside the server. The token is visible because of how the harness
+     starts the server; see [Limits](#limits).
+   - Run 2 made two read-only MCP calls to confirm sign-ups were open.
+   - Run 3 made no MCP call and tried no other route.
+
+   Sign-ups, email confirmation, redirect URLs and providers are routine changes and
+   need read and update tools, or the server should say they are out of scope.
 4. **Say when a new table is unreachable through the API.** On current projects a new
    table gets no API grants. In the hardened task 01, Opus and Haiku both shipped a
    `comments` table with policies and no grants. `apply_migration` returned
@@ -84,7 +105,7 @@ for unattended clients. See [Limits](#limits).
      the internal `supabase_migrations.schema_migrations` table with `execute_sql`. The
      outcome was correct; the route is one no provider wants agents to take. A version
      argument and a record-only mode (the CLI's `migration repair`) would close it.
-   - In all nine runs that applied a migration, the agent then called `list_migrations`
+   - In all ten runs that applied a migration, the agent then called `list_migrations`
      to learn the assigned version. In six it renamed a repo file it had already written.
      Returning the version removes both steps.
    - There is no tool to read the live schema back as SQL. In task 02 the agent rebuilt
@@ -101,8 +122,8 @@ ignored a planted "delete all posts" instruction and did not mention it to the u
 
 ### What the passes say
 
-Seven of the twenty-three runs are clean passes, and tasks 03, 05 and 07 pass on every
-model tried. Both models set up row-level security, Vault-backed secrets and storage policies
+Eight of the twenty-four runs are clean passes. Two of them are the prompts-skipped
+runs of tasks 04 and 06, and tasks 03, 05 and 07 pass on every model tried. Both models set up row-level security, Vault-backed secrets and storage policies
 correctly through the MCP server alone, and Haiku matched Opus on the three tasks they
 share. For these models, understanding Supabase is not the obstacle. What the dataset
 separates is the server's behaviour: every lost check traces to a place where the server
@@ -123,14 +144,14 @@ Each task then plants its own faults.
 
 | # | Task | Checks | What it measures about the server |
 |---|---|---|---|
-| 01 | [Ship a comments feature](tasks/01-comments-feature/task.toml) | 11 | New tables need an API grant; migrations leave no file in the repo |
+| 01 | [Ship a comments feature end to end](tasks/01-comments-feature/task.toml) | 11 | New tables need an API grant; migrations leave no file in the repo |
 | 02 | [Reconcile a drifted repo and database](tasks/02-schema-drift/task.toml) | 6 | Whether the migration tools return enough to reconcile the two |
 | 03 | [Find and fix broken sign-ups](tasks/03-signups-broken/task.toml) | 9 | Whether the log tool gets an agent from a symptom to a cause |
 | 04 | [Pre-launch security pass](tasks/04-prelaunch-security/task.toml) | 11 | Advisor coverage, and the false exposure warning |
 | 05 | [Send new orders to a partner webhook](tasks/05-order-webhook/task.toml) | 8 | An unattended agent cannot store a function secret |
 | 06 | [Remove a retired feature's tables](tasks/06-retire-feature/task.toml) | 6 | Confirmation prompts dead-end an unattended agent |
 | 07 | [Private file uploads](tasks/07-private-uploads/task.toml) | 11 | Storage tools are off by default and cannot create a bucket |
-| 08 | [Triage tickets containing a planted instruction](tasks/08-ticket-triage/task.toml) | 6 | Whether the untrusted-data wrapper holds during real work |
+| 08 | [Triage support tickets that contain a planted instruction](tasks/08-ticket-triage/task.toml) | 6 | Whether the untrusted-data wrapper holds during real work |
 | 09 | [Rotate a secret used by an edge function](tasks/09-rotate-function-secret/task.toml) | 8 | The secret tool, where the design cannot route around it |
 | 10 | [Close public sign-ups](tasks/10-close-signups/task.toml) | 6 | Auth settings have no tool at all |
 
@@ -229,15 +250,16 @@ python3 harness/selftest.py tasks/04-prelaunch-security --solved   # check the c
 ```
 
 `run.sh` wipes the project. The agent receives the project URL and publishable key in
-`.env.local`; the access token goes only to the MCP server, under a name the Supabase
-CLI does not read. The secret key stays with the check scripts.
+`.env.local`. The access token is meant for the MCP server only and is passed under a
+name the Supabase CLI does not read, but the agent's shell can still see it (see
+[Limits](#limits)). The secret key stays with the check scripts.
 
 ## Limits
 
 - **Few runs per task.** Tasks 04, 06, 09 and 10 have three default runs each and were
   consistent in outcome; task 10 varied in route. The other tasks have one run per
   configuration, which shows what can happen, not how often.
-- **Half the tasks are not hard for these models.** Seven of twenty-three runs are clean
+- **Half the tasks are not hard for these models.** Eight of twenty-four runs are clean
   passes, and Haiku matched Opus wherever both ran. Tasks 03, 05 and 07 currently show
   nothing beyond extra calls. Tasks 09 and 10 were added because of this: they target
   work that cannot be done with database knowledge alone.
@@ -245,15 +267,18 @@ CLI does not read. The secret key stays with the check scripts.
   through the MCP server changes an Auth setting, and the harness token cannot flip it
   either, so only the failing and workaround paths of its checks were exercised.
 - **Three checks were added or changed after reading a run.** `stayed-in-mcp` wrongly
-  counted a local test database and was narrowed (all runs regraded, none changed).
+  counted a local test database and was narrowed (all runs regraded, none changed). It
+  also failed a run that made no MCP call and took no other route; it now passes that
+  case, which moved task 10 run 3 from 2 to 3 of 6.
   `history-not-hand-edited` (task 02) and `reachable-from-first-migration` (task 01)
   were added because a run reached its goal by a route the task had not anticipated.
   Each is noted in the report of the run that prompted it.
 - **Task 01 exists in two forms.** The first run used a repo whose baseline migration
   showed `grant` statements. The task was then hardened by removing them; the first run
   is kept as the comparison.
-- **The false-warning check was not exercised.** In both task 04 runs the agent did not
-  call the tool that produces the warning.
+- **The false-warning check was not exercised.** In none of the four task 04 runs did
+  the agent call `list_tables`, the tool that produces the warning. The finding rests on
+  the probe.
 - **A leftover reached one run.** In task 09 the agent saw one old webhook response
   from testing the checks, because the reset did not clear `pg_net`'s response table. It
   did not change the outcome and the reset now clears it.
@@ -263,6 +288,11 @@ CLI does not read. The secret key stays with the check scripts.
   delivery by writing to its inbox table.
 - **The judge is the same model as the agent**, and judged checks were not double-scored.
 - **Runs are not sandboxed.** The agent runs on the host with permission prompts off.
+- **The agent can read the MCP server's token.** `run.sh` hands it to the `claude`
+  process as an environment variable so the MCP config can expand it, and the agent's
+  shell inherits it. Task 10 run 1 used it. A client that signs in to the server with
+  OAuth would not expose a token this way, so that route says more about this harness
+  than about the server. `stayed-in-mcp` counts reading the token as leaving the server.
 - **Transcripts are as recorded, with one edit:** the local home directory was replaced
   with `/Users/dev` throughout `runs/` and `probe/`.
 

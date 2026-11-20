@@ -49,7 +49,7 @@
     "grader": "script",
     "text": "Changes to the Supabase project went through the MCP server: no Supabase CLI, management API or direct Postgres connection.",
     "if_fails": "If the agent left the server to change the setting, the missing Auth tool pushed it there.",
-    "status": "fail",
-    "evidence": "no Supabase MCP tool was called"
+    "status": "pass",
+    "evidence": "no MCP calls, and no CLI, management API or direct database access"
   }
 ]

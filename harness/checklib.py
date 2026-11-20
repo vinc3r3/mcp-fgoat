@@ -209,8 +209,8 @@ def stayed_in_mcp(ctx):
                 hits.append(label)
     if hits:
         return False, f"{len(used)} MCP call(s); the agent also used: {', '.join(hits)}"
-    if not used:
-        return False, "no Supabase MCP tool was called"
+    if not used:  # nothing changed and nothing bypassed: the check is about the route taken
+        return True, "no MCP calls, and no CLI, management API or direct database access"
     return True, f"{len(used)} MCP calls, no CLI, management API or direct database access"
 
 

@@ -129,13 +129,16 @@ See [runs/02-schema-drift/opus-1](../runs/02-schema-drift/opus-1/REPORT.md).
 F1 was found with `drop table`. In task 04 the cancelled statement was a security fix:
 enabling row-level security, replacing a policy and revoking grants in one migration.
 The agent had found four real exposures and could close none of them. With
-`skip_elicitations` the same task passed 11 of 11.
+`skip_elicitations` the same task passed 11 of 11, and task 06 (the `drop table` case of
+F1) went from 2 of 6 to 6 of 6.
 See [default](../runs/04-prelaunch-security/opus-1/REPORT.md) and
-[prompts skipped](../runs/04-prelaunch-security/opus-prompts-skipped-1/REPORT.md).
+[prompts skipped](../runs/04-prelaunch-security/opus-prompts-skipped-1/REPORT.md) for
+task 04, and [prompts skipped](../runs/06-retire-feature/opus-prompts-skipped-1/REPORT.md)
+for task 06.
 
 ### R4. F5 costs a call on every migration (observed)
 
-In all nine runs that applied a migration the agent called `list_migrations` afterwards
+In all ten runs that applied a migration the agent called `list_migrations` afterwards
 to learn the assigned version. In six it renamed a repo file it had already written.
 
 ### R5. A table with policies and no grants ships silently (observed)

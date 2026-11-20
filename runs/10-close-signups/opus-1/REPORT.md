@@ -67,7 +67,7 @@ Steps marked ⚠️ returned an error, a refusal or a cancellation.
 1. Shell: `git ls-files && cat supabase/config.toml 2>/dev/null | head -100`
 2. Shell: `cat AGENTS.md README.md .env.example app/login/page.tsx supabase/migrations/*.sql; which supabase; ls ~/.supabase 2>/dev/null` ⚠️
    - Returned: `Exit code 1 <!-- BEGIN:nextjs-agent-rules --> ## This is NOT the Next.js you know This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in 'node_modules/ne…`
-3. Shell: `env | grep -i supabase | sed 's/=.*/=<set>/'; ls -a ~/.supabase 2>/dev/null; cd /Users/dev/.cache/mcp-fgoat-runs/10-close-signups/opus-1 && ls -a; …`
+3. Shell: `env | grep -i supabase | sed 's/=.*/=<set>/'; ls -a ~/.supabase 2>/dev/null; cd /Users/dev/.cache/mcp-fgoat-runs/10-close-signups/opus-1 && ls -a; gr…`
 4. Shell: `curl -s -o /tmp/authcfg.json -w '%{http_code}\n' -H "Authorization: Bearer $SUPABASE_MCP_TOKEN" "https://api.supabase.com/v1/projects/$SUPABASE_MCP_P…`
 
 ## The agent's final message

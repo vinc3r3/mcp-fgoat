@@ -4,7 +4,8 @@
 #   harness/run.sh <task-dir> [run-name]
 #
 # The agent starts in a fresh copy of the template, outside this repo, with only the
-# Supabase MCP server attached. Only the MCP server receives the access token and project ref: the secret key in .env stays with the check scripts.
+# Supabase MCP server attached. The access token and project ref are passed for the MCP
+# server (the agent's shell inherits them too); the secret key in .env stays with the check scripts.
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"

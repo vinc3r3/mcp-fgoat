@@ -34,8 +34,9 @@ Run `opus-2` of task `06-retire-feature`.
 
 ## What the provider should change
 
-- **tables-removed:** A cancelled confirmation should tell the agent how an unattended client can proceed (the skip_elicitations URL parameter), or the server should accept an explicit confirmation argument when the client cannot show a prompt.
-- **no-work-handed-back:** Same as tables-removed: the confirmation prompt has no path for an unattended client.
+- **Confirmation prompt (step 5):** the server asked the client to confirm, the request was cancelled and the statement did not run. The cancellation message should name the documented `skip_elicitations` setting, or the tools should accept an explicit confirmation argument when the client cannot show a prompt.
+
+No migration was applied after the cancellation, so every failed check in this run traces to it (`tables-removed`, `removal-recorded`, `removal-in-repo`, `no-work-handed-back`). The checks' own pointers describe an agent that misses the problem and do not apply here.
 
 ## What the agent did
 
